@@ -1,0 +1,530 @@
+/*
+ * Estilos de la aplicacion. Sin librerias: son ~200 lineas y meter Tailwind
+ * costaria configuracion y peso de bundle para un proyecto de una sola pagina.
+ *
+ * Los colores viven todos aqui como variables. La paleta clara se define en
+ * :root y la oscura se redefine con prefers-color-scheme, asi que ningun color
+ * esta escrito dos veces en otro lugar.
+ */
+
+:root {
+  --fondo: #f7f6f3;
+  --superficie: #ffffff;
+  --borde: #dcd8d0;
+  --texto: #1d1c1a;
+  --texto-suave: #5c5850;
+  --acento: #0072b2; /* azul Okabe-Ito, la misma paleta del vault */
+  --acento-suave: #d7e9f5;
+  --exito: #009e73;
+  --alerta: #d55e00;
+  --sombra: 0 1px 2px rgb(0 0 0 / 6%), 0 4px 12px rgb(0 0 0 / 4%);
+  --radio: 10px;
+  --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #16151a;
+    --superficie: #1f1e25;
+    --borde: #35333d;
+    --texto: #f2f0ee;
+    --texto-suave: #a9a5b0;
+    --acento: #56b4e9;
+    --acento-suave: #233240;
+    --exito: #35d6a4;
+    --alerta: #f0883e;
+    --sombra: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.55;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.app__encabezado {
+  margin-bottom: 24px;
+}
+
+.app__titulo {
+  margin: 0 0 4px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.01em;
+}
+
+.app__bajada {
+  margin: 0;
+  color: var(--texto-suave);
+  max-width: 62ch;
+}
+
+.panel {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.panel__encabezado h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-suave);
+}
+
+.panel__ayuda {
+  margin: 0 0 16px;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  max-width: 70ch;
+}
+
+.campo {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.campo__etiqueta {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.campo__control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--texto);
+  font: inherit;
+  resize: vertical;
+}
+
+.campo__control--mono {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+}
+
+.campo__control:focus-visible,
+.chip:focus-visible,
+.boton:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.fila > * {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip,
+.boton {
+  border: 1px solid var(--borde);
+  background: var(--fondo);
+  color: var(--texto);
+  padding: 7px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip--activo {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.boton {
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+}
+
+.boton--primario {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+
+.estado {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.estado--error {
+  color: var(--alerta);
+  font-weight: 600;
+}
+
+.salida {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0;
+}
+
+.resultado {
+  border-left: 3px solid var(--exito);
+  padding-left: 14px;
+  margin: 16px 0;
+}
+
+.resultado--negado {
+  border-left-color: var(--alerta);
+}
+
+.resultado__etiqueta {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.resultado__meta {
+  margin: 0 0 10px;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+}
+
+.insignia {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--acento-suave);
+  color: var(--texto);
+}
+
+.histograma,
+.curva {
+  margin: 16px 0 0;
+}
+
+.histograma svg,
+.curva svg {
+  width: 100%;
+  height: 170px;
+  display: block;
+}
+
+.curva svg {
+  height: 90px;
+}
+
+.histograma__referencia {
+  fill: var(--acento);
+  opacity: 0.45;
+}
+
+.histograma__observado {
+  fill: var(--exito);
+  transition: height 220ms ease-out, y 220ms ease-out;
+}
+
+.histograma__eje {
+  stroke: var(--borde);
+  stroke-width: 0.5;
+}
+
+.curva__linea {
+  fill: none;
+  stroke: var(--acento);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.curva__pico {
+  stroke: var(--alerta);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.histograma__pie,
+.curva__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+  margin-top: 6px;
+}
+
+.histograma__clave::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+}
+
+.histograma__clave--referencia::before {
+  background: var(--acento);
+  opacity: 0.55;
+}
+
+.histograma__clave--observado::before {
+  background: var(--exito);
+}
+
+.detalle {
+  margin-top: 14px;
+  font-size: 0.9rem;
+}
+
+.detalle summary {
+  cursor: pointer;
+  color: var(--acento);
+}
+
+.tabla-alfabeto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 12px 0 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tabla-alfabeto li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 4px 6px;
+  min-width: 42px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.tabla-alfabeto__indice {
+  color: var(--texto-suave);
+  font-size: 0.7rem;
+}
+
+.tabla-alfabeto__simbolo {
+  font-size: 0.95rem;
+}
+
+.evidencia {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin-top: 10px;
+}
+
+.evidencia th,
+.evidencia td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.evidencia td:last-child {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.app__pie {
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  border-top: 1px solid var(--borde);
+  padding-top: 16px;
+}
+
+.app__pie a {
+  color: var(--acento);
+}
+
+/*
+ * Ajustes por tamaño de pantalla y por tipo de apuntador.
+ *
+ * Van al final y como sobrescrituras a proposito: las reglas base de arriba se
+ * leen limpias, y todo lo que tiene que ver con "que se use bien en el
+ * telefono y en la computadora" queda junto en un solo lugar.
+ *
+ * Medido con Playwright a 390 px ANTES de escribir esto: no habia
+ * desbordamiento horizontal y la tabla de evidencia ya scrolleaba sola, pero
+ * los campos tenian 14.08 px de letra y los botones entre 37 y 41 px de alto.
+ */
+
+/* --- Campos comodos en pantalla chica.
+   El umbral de 16 px no es estetico: por debajo de eso, Safari en iPhone
+   acerca la pagina sola en cuanto se enfoca un campo, y el usuario queda
+   viendo un pedazo del formulario. */
+@media (max-width: 720px) {
+  .campo__control,
+  .campo__control--mono {
+    font-size: 16px;
+  }
+
+  .salida {
+    font-size: 0.95rem;
+  }
+}
+
+/* --- Apuntador grueso (dedo), sin importar el ancho de la pantalla.
+   44 px es la altura minima recomendada para un objetivo tactil. */
+@media (pointer: coarse) {
+  .boton,
+  .chip {
+    min-height: 44px;
+    padding-block: 10px;
+    touch-action: manipulation; /* quita el retardo de ~300 ms al tocar */
+  }
+
+  .detalle summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  input[type='range'] {
+    min-height: 44px;
+  }
+
+  .tabla-alfabeto li {
+    min-width: 46px;
+    padding: 6px 8px;
+  }
+}
+
+/* --- Telefono.
+   Los tamaños tactiles se repiten aqui, y no solo en el bloque de
+   `pointer: coarse` de arriba, porque ese bloque no es confiable: medido con
+   Playwright, el navegador reporto `pointer: coarse` como falso y los
+   objetivos se quedaron en 37-41 px, con el `summary` en 22. Una pantalla de
+   520 px o menos casi siempre es un telefono, asi que el ancho es la señal que
+   sí se puede medir y sí se cumple. */
+@media (max-width: 520px) {
+  .app {
+    padding: 16px 14px 56px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .app__titulo {
+    font-size: 1.45rem;
+  }
+
+  .boton,
+  .chip {
+    min-height: 44px;
+    padding-block: 10px;
+    touch-action: manipulation;
+  }
+
+  /* Lo que mas se toca en el telefono: abrir la tabla de indices y la
+     evidencia del analisis. Con 22 px de alto se falla el toque seguido. */
+  .detalle summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  input[type='range'] {
+    min-height: 44px;
+  }
+
+  .tabla-alfabeto li {
+    min-width: 46px;
+    padding: 6px 8px;
+  }
+
+  /* El histograma es la firma visual del proyecto y con 95 barras el ancho ya
+     esta al limite (3.25 px por barra, medido), asi que se compensa con alto. */
+  .histograma svg {
+    height: 150px;
+  }
+
+  .curva svg {
+    height: 80px;
+  }
+
+  /* Los botones de accion, uno debajo del otro y a todo el ancho: mas facil de
+     atinar con el dedo que dos botones angostos lado a lado. */
+  .presets .boton {
+    flex: 1 1 100%;
+  }
+}
+
+/* --- Computadora: dos columnas para no tener que bajar tanto.
+   Cifrar a la izquierda y descifrar a la derecha, con el alfabeto completo
+   arriba, que es el que manda sobre los otros dos. */
+@media (min-width: 900px) {
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+    align-items: start;
+  }
+
+  .app__encabezado,
+  .app__pie,
+  section:nth-of-type(1) {
+    grid-column: 1 / -1;
+  }
+
+  .panel {
+    margin-bottom: 0;
+  }
+
+  .app__encabezado,
+  section:nth-of-type(1) {
+    margin-bottom: 20px;
+  }
+
+  .app__pie {
+    margin-top: 20px;
+  }
+}
