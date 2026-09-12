@@ -27,6 +27,8 @@ jobs:
       contents: read
       pages: write # publicar el sitio
       id-token: write # OIDC: se autentica sin guardar ningun token en el repo
+      attestations: write # guardar la prueba firmada de procedencia del build
+      artifact-metadata: write # registro de los archivos atestiguados
 
     environment:
       name: github-pages
@@ -55,6 +57,15 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Prueba firmada de procedencia: GitHub firma con Sigstore que estos
+      # archivos salieron de ESTE commit y de ESTE workflow. No sirve de nada
+      # generarla si nadie la verifica, asi que el README explica como:
+      #   gh attestation verify <archivo> -R HarimDuenas/cifrado-cesar-atbash
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: 'dist/assets/*'
 
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
