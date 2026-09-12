@@ -129,12 +129,32 @@ su fuente:
 ### Verificar que el sitio publicado corre este código
 
 ```bash
-curl -s https://harimduenas.github.io/cifrado-cesar-atbash/assets/<archivo>.js | sha256sum
+# Hash del paquete que sirve el sitio
+curl -s https://harimduenas.github.io/cifrado-cesar-atbash/assets/index-Cefm0WOY.js | sha256sum
+
+# Hash del mismo paquete construido desde este repositorio
 npm ci && npm run build && sha256sum dist/assets/index-*.js
 ```
 
-Si los dos hashes coinciden, nada se alteró después de construirse. El hash de la versión
-entregada se publica en el documento (se llena al momento de publicar).
+Los dos deben dar:
+
+```
+65da024fed768efd8fdab99065d4b3fe3c057d1f1a1a865a18a9140791002fd3
+```
+
+Comprobado el 2026-09-11 contra el sitio en línea: **coinciden**, así que lo publicado es
+exactamente este código y nada se alteró después de construirse. Si algún día dejan de coincidir,
+o el sitio fue modificado por fuera del repositorio, o el paquete se reconstruyó desde otro
+commit.
+
+Además, cada despliegue genera una **prueba firmada de procedencia** (GitHub la firma con
+Sigstore), que se comprueba sin confiar en este archivo:
+
+```bash
+gh attestation verify dist/assets/index-Cefm0WOY.js -R HarimDuenas/cifrado-cesar-atbash
+```
+
+Eso liga el paquete con el commit y el workflow exactos que lo construyeron.
 
 ## Dónde está cada punto de la rúbrica
 
