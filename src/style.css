@@ -1,40 +1,49 @@
 /*
- * Estilos de la aplicacion. Sin librerias: son ~200 lineas y meter Tailwind
- * costaria configuracion y peso de bundle para un proyecto de una sola pagina.
+ * Estilos de la aplicacion: direccion visual "geometria de al-Kindi".
  *
- * Los colores viven todos aqui como variables. La paleta clara se define en
- * :root y la oscura se redefine con prefers-color-scheme, asi que ningun color
- * esta escrito dos veces en otro lugar.
+ * Por que este aspecto y no el de una app cualquiera: el programa usa el metodo
+ * que al-Kindi describio en Bagdad en el siglo IX, asi que el diseño cita su
+ * origen en lugar de inventar una estetica neutra. De ahi las tres decisiones
+ * que lo definen:
+ *
+ *   1. Pergamino, indigo y oro, con tinta calida. Nada de gris azulado.
+ *   2. Sin tarjetas ni sombras: filetes finos con una estrella de ocho puntas
+ *      cortando la linea, como una monografia impresa.
+ *   3. Un enrejado geometrico de ocho puntas como fondo, muy tenue, dibujado
+ *      con un SVG embebido para no pedir nada por red. El programa no habla con
+ *      ningun servidor, y la hoja de estilos tampoco.
+ *
+ * Sin librerias de CSS y sin fuentes web: serif del sistema para la prosa,
+ * monoespaciado para los simbolos. Todos los colores viven arriba como
+ * variables; la paleta oscura solo las redefine.
  */
 
+/*
+ * Una sola paleta, oscura para todos: no se sigue el tema del sistema.
+ * Es la version nocturna de la misma direccion: indigo profundo, tinta calida
+ * color pergamino y oro.
+ *
+ * Los nombres de las variables siguen diciendo "pergamino" y "tinta" a
+ * proposito: describen el papel que cumplen (fondo de pagina y superficie
+ * elevada, texto principal y secundario), no el color literal. Renombrarlos
+ * tocaria cuarenta selectores sin ganar nada.
+ */
 :root {
-  --fondo: #f7f6f3;
-  --superficie: #ffffff;
-  --borde: #dcd8d0;
-  --texto: #1d1c1a;
-  --texto-suave: #5c5850;
-  --acento: #0072b2; /* azul Okabe-Ito, la misma paleta del vault */
-  --acento-suave: #d7e9f5;
-  --exito: #009e73;
-  --alerta: #d55e00;
-  --sombra: 0 1px 2px rgb(0 0 0 / 6%), 0 4px 12px rgb(0 0 0 / 4%);
-  --radio: 10px;
-  --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
-}
+  color-scheme: dark; /* controles, barras y el deslizador se dibujan oscuros */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #16151a;
-    --superficie: #1f1e25;
-    --borde: #35333d;
-    --texto: #f2f0ee;
-    --texto-suave: #a9a5b0;
-    --acento: #56b4e9;
-    --acento-suave: #233240;
-    --exito: #35d6a4;
-    --alerta: #f0883e;
-    --sombra: none;
-  }
+  --pergamino: #14161f;
+  --pergamino-alto: #1b1e2b;
+  --filete: #333852;
+  --tinta: #ece5d6;
+  --tinta-suave: #a49c8a;
+  --indigo: #8fa0e8;
+  --indigo-tenue: #232841;
+  --oro: #d9ab4f;
+  --oro-tenue: #3a2f18;
+  --alerta: #e0764a;
+  --radio: 2px;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }
 
 * {
@@ -43,102 +52,187 @@
 
 body {
   margin: 0;
-  background: var(--fondo);
-  color: var(--texto);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.55;
+  color: var(--tinta);
+  background-color: var(--pergamino);
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.6;
+  /* La vi\00f1eta oscurece las orillas para que la roseta del fondo se lea como
+     una pieza centrada y no como papel tapiz. */
+  background-image: radial-gradient(
+    ellipse at 50% 32%,
+    rgb(45 52 92 / 55%) 0%,
+    rgb(20 22 31 / 0%) 62%
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/*
+ * El fondo: UNA roseta de ocho puntas, no una cuadricula repetida.
+ *
+ * Antes esto era una baldosa teselada de cuadros y rombos, que es exactamente
+ * el aspecto de papel tapiz generico. Una sola pieza grande, centrada y fija,
+ * con sus anillos y radios, se lee como ornamento y no como relleno.
+ *
+ * Va en un pseudo-elemento fijo y sin eventos de puntero, para que no estorbe
+ * a nada de la pagina y no se mueva con el scroll.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23d9ab4f' stroke-width='0.9' stroke-opacity='0.5'%3E%3Ccircle cx='100' cy='100' r='96'/%3E%3Ccircle cx='100' cy='100' r='68'/%3E%3Ccircle cx='100' cy='100' r='30'/%3E%3Cpath d='M20 20H180V180H20Z'/%3E%3Cpath d='M100 4 196 100 100 196 4 100Z'/%3E%3Cpath d='M168 100 148 148 100 168 52 148 32 100 52 52 100 32 148 52Z'/%3E%3Cpath d='M100 4V196M4 100H196M30 30 170 170M170 30 30 170'/%3E%3Cpath d='M100 32 118 82 168 100 118 118 100 168 82 118 32 100 82 82Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center 22%;
+  background-size: min(150vh, 150vw) min(150vh, 150vw);
+  opacity: 0.16;
 }
 
 .app {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 40px 20px 72px;
+}
+
+/* ---------------------------------------------------------------- cabecera */
+
+.app__encabezado {
+  text-align: center;
+  margin-bottom: 44px;
+  padding-bottom: 28px;
+  position: relative;
+}
+
+/* Filete inferior con la estrella al centro, "cortando" la linea. */
+.app__encabezado::after {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  bottom: -0.75em;
+  transform: translateX(-50%);
+  color: var(--oro);
+  background-color: var(--pergamino);
+  padding: 0 14px;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .app__encabezado {
-  margin-bottom: 24px;
+  border-bottom: 1px solid var(--filete);
 }
 
 .app__titulo {
-  margin: 0 0 4px;
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.7rem, 5vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--indigo);
 }
 
 .app__bajada {
-  margin: 0;
-  color: var(--texto-suave);
-  max-width: 62ch;
+  margin: 0 auto;
+  max-width: 60ch;
+  color: var(--tinta-suave);
+  font-size: 1.02rem;
 }
 
+/* ---------------------------------------------------------------- secciones */
+
 .panel {
-  background: var(--superficie);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio);
-  box-shadow: var(--sombra);
-  padding: 20px;
-  margin-bottom: 20px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--filete);
+  padding: 34px 0 8px;
+  margin: 0 0 40px;
+  position: relative;
+}
+
+/* Ornamento que corta el filete superior de cada seccion. */
+.panel::before {
+  content: "◈";
+  position: absolute;
+  top: -0.72em;
+  left: 0;
+  color: var(--oro);
+  background-color: var(--pergamino);
+  padding-right: 12px;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .panel__encabezado h2 {
-  margin: 0 0 4px;
-  font-size: 1.05rem;
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--texto-suave);
+  letter-spacing: 0.16em;
+  color: var(--indigo);
 }
 
 .panel__ayuda {
-  margin: 0 0 16px;
-  color: var(--texto-suave);
-  font-size: 0.92rem;
-  max-width: 70ch;
+  margin: 0 0 22px;
+  max-width: 74ch;
+  color: var(--tinta-suave);
+  font-size: 0.96rem;
 }
+
+/* ---------------------------------------------------------------- controles */
 
 .campo {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .campo__etiqueta {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tinta-suave);
+  margin-bottom: 7px;
 }
 
 .campo__control {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-  background: var(--fondo);
-  color: var(--texto);
-  font: inherit;
+  padding: 11px 13px;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  background-color: var(--pergamino-alto);
+  color: var(--tinta);
+  font-family: var(--serif);
+  font-size: 1rem;
   resize: vertical;
 }
 
 .campo__control--mono {
   font-family: var(--mono);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .campo__control:focus-visible,
 .chip:focus-visible,
-.boton:focus-visible {
-  outline: 2px solid var(--acento);
+.boton:focus-visible,
+.detalle summary:focus-visible {
+  outline: 2px solid var(--oro);
   outline-offset: 2px;
 }
 
 .fila {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
   align-items: flex-end;
 }
 
 .fila > * {
-  flex: 1 1 180px;
+  flex: 1 1 190px;
   min-width: 0;
 }
 
@@ -146,137 +240,180 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .chip,
 .boton {
-  border: 1px solid var(--borde);
-  background: var(--fondo);
-  color: var(--texto);
-  padding: 7px 12px;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 0.85rem;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  background-color: var(--pergamino-alto);
+  color: var(--tinta);
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
   cursor: pointer;
 }
 
 .chip--activo {
-  background: var(--acento-suave);
-  border-color: var(--acento);
-  color: var(--texto);
-  font-weight: 600;
+  background-color: var(--indigo);
+  border-color: var(--indigo);
+  color: var(--pergamino-alto);
+  font-weight: 700;
 }
 
 .boton {
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-weight: 600;
+  padding: 10px 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.76rem;
 }
 
 .boton--primario {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: #fff;
+  background-color: var(--indigo);
+  border-color: var(--indigo);
+  color: var(--pergamino-alto);
+}
+
+.boton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .estado {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--texto-suave);
+  font-size: 0.93rem;
+  color: var(--tinta-suave);
 }
 
 .estado--error {
   color: var(--alerta);
-  font-weight: 600;
+  font-weight: 700;
 }
+
+/* ---------------------------------------------------------------- resultados */
 
 .salida {
   font-family: var(--mono);
   font-size: 0.9rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: var(--fondo);
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-  padding: 12px;
+  background-color: var(--pergamino-alto);
+  border: 1px solid var(--filete);
+  border-left: 3px solid var(--indigo);
+  border-radius: var(--radio);
+  padding: 14px;
   margin: 0;
 }
 
+/* El resultado del descifrado es lo mas importante de la pagina, y se ve. */
 .resultado {
-  border-left: 3px solid var(--exito);
-  padding-left: 14px;
-  margin: 16px 0;
+  margin: 26px 0 20px;
+  padding: 22px 24px;
+  background-color: var(--pergamino-alto);
+  border: 1px solid var(--filete);
+  border-top: 3px solid var(--oro);
 }
 
 .resultado--negado {
-  border-left-color: var(--alerta);
+  border-top-color: var(--alerta);
 }
 
 .resultado__etiqueta {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 2px;
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: clamp(1.3rem, 3.4vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--indigo);
+}
+
+.resultado--negado .resultado__etiqueta {
+  color: var(--alerta);
 }
 
 .resultado__meta {
-  margin: 0 0 10px;
-  color: var(--texto-suave);
-  font-size: 0.88rem;
+  margin: 0 0 16px;
+  color: var(--tinta-suave);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
 }
 
 .insignia {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.78rem;
+  vertical-align: 0.18em;
+  margin-left: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--oro);
+  border-radius: var(--radio);
+  background-color: var(--oro-tenue);
+  color: var(--tinta);
+  font-family: var(--mono);
+  font-size: 0.7rem;
   font-weight: 700;
-  background: var(--acento-suave);
-  color: var(--texto);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
+/* ---------------------------------------------------------------- graficas */
+
+/* El histograma es la prueba visual del metodo: es lo que mas crece. */
 .histograma,
 .curva {
-  margin: 16px 0 0;
+  margin: 26px 0 0;
 }
 
-.histograma svg,
+.histograma svg {
+  width: 100%;
+  height: 220px;
+  display: block;
+  background-color: var(--pergamino-alto);
+  border: 1px solid var(--filete);
+}
+
 .curva svg {
   width: 100%;
-  height: 170px;
+  height: 110px;
   display: block;
+  background-color: var(--pergamino-alto);
+  border: 1px solid var(--filete);
 }
 
-.curva svg {
-  height: 90px;
-}
-
-.histograma__referencia {
-  fill: var(--acento);
-  opacity: 0.45;
+/* El español va como silueta de fondo, no como barras: es contra lo que se
+   compara, y asi el criptograma puede caer dentro y verse el encaje. */
+.histograma__silueta {
+  fill: var(--indigo);
+  opacity: 0.3;
+  stroke: var(--indigo);
+  stroke-width: 0.4;
+  stroke-opacity: 0.7;
+  vector-effect: non-scaling-stroke;
 }
 
 .histograma__observado {
-  fill: var(--exito);
+  fill: var(--oro);
   transition: height 220ms ease-out, y 220ms ease-out;
 }
 
 .histograma__eje {
-  stroke: var(--borde);
-  stroke-width: 0.5;
+  stroke: var(--filete);
+  stroke-width: 0.6;
 }
 
 .curva__linea {
   fill: none;
-  stroke: var(--acento);
-  stroke-width: 0.8;
+  stroke: var(--indigo);
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 .curva__pico {
-  stroke: var(--alerta);
-  stroke-width: 0.6;
-  stroke-dasharray: 2 2;
+  stroke: var(--oro);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2;
   vector-effect: non-scaling-stroke;
 }
 
@@ -284,48 +421,59 @@ body {
 .curva__pie {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  font-size: 0.82rem;
-  color: var(--texto-suave);
-  margin-top: 6px;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  margin-top: 9px;
 }
 
 .histograma__clave::before {
-  content: '';
+  content: "";
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 6px;
+  width: 11px;
+  height: 11px;
+  margin-right: 7px;
+  transform: translateY(1px);
 }
 
 .histograma__clave--referencia::before {
-  background: var(--acento);
-  opacity: 0.55;
+  background-color: var(--indigo);
+  opacity: 0.45;
 }
 
 .histograma__clave--observado::before {
-  background: var(--exito);
+  background-color: var(--oro);
 }
 
+/* ---------------------------------------------------------------- detalles */
+
 .detalle {
-  margin-top: 14px;
-  font-size: 0.9rem;
+  margin-top: 20px;
+  font-size: 0.95rem;
+  border-top: 1px solid var(--filete);
+  padding-top: 14px;
 }
 
 .detalle summary {
   cursor: pointer;
-  color: var(--acento);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--indigo);
 }
 
+/* El alfabeto como celdas teseladas: comparten arista, no flotan separadas. */
 .tabla-alfabeto {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
   list-style: none;
-  padding: 12px 0 0;
+  padding: 16px 0 0;
   margin: 0;
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -333,39 +481,53 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid var(--borde);
-  border-radius: 6px;
-  padding: 4px 6px;
-  min-width: 42px;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 -1px -1px 0;
+  border: 1px solid var(--filete);
+  background-color: var(--pergamino-alto);
   font-family: var(--mono);
-  font-size: 0.78rem;
+}
+
+.tabla-alfabeto li:hover {
+  background-color: var(--indigo-tenue);
 }
 
 .tabla-alfabeto__indice {
-  color: var(--texto-suave);
-  font-size: 0.7rem;
+  color: var(--tinta-suave);
+  font-size: 0.6rem;
 }
 
 .tabla-alfabeto__simbolo {
   font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .evidencia {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.84rem;
-  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  margin-top: 14px;
 }
 
 .evidencia th,
 .evidencia td {
   text-align: left;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--borde);
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--filete);
+  vertical-align: top;
+}
+
+.evidencia th {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: var(--indigo);
 }
 
 .evidencia td:last-child {
-  font-family: var(--mono);
   overflow-wrap: anywhere;
 }
 
@@ -373,33 +535,43 @@ body {
   overflow-x: auto;
 }
 
+/* ---------------------------------------------------------------- pie */
+
 .app__pie {
-  color: var(--texto-suave);
-  font-size: 0.82rem;
-  border-top: 1px solid var(--borde);
-  padding-top: 16px;
+  margin-top: 8px;
+  padding-top: 22px;
+  border-top: 1px solid var(--filete);
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+  position: relative;
 }
 
-.app__pie a {
-  color: var(--acento);
+.app__pie::before {
+  content: "✦";
+  position: absolute;
+  top: -0.72em;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--oro);
+  background-color: var(--pergamino);
+  padding: 0 14px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.app__pie p {
+  max-width: 76ch;
+  margin: 0 0 10px;
 }
 
 /*
  * Ajustes por tamaño de pantalla y por tipo de apuntador.
  *
- * Van al final y como sobrescrituras a proposito: las reglas base de arriba se
- * leen limpias, y todo lo que tiene que ver con "que se use bien en el
- * telefono y en la computadora" queda junto en un solo lugar.
- *
- * Medido con Playwright a 390 px ANTES de escribir esto: no habia
- * desbordamiento horizontal y la tabla de evidencia ya scrolleaba sola, pero
- * los campos tenian 14.08 px de letra y los botones entre 37 y 41 px de alto.
+ * Medido con Playwright a 390 px: sin estas reglas los campos quedaban en
+ * 14 px de letra (por debajo de 16, Safari acerca la pagina sola al enfocar) y
+ * los objetivos tactiles entre 22 y 41 px, debajo de los 44 recomendados.
  */
 
-/* --- Campos comodos en pantalla chica.
-   El umbral de 16 px no es estetico: por debajo de eso, Safari en iPhone
-   acerca la pagina sola en cuanto se enfoca un campo, y el usuario queda
-   viendo un pedazo del formulario. */
 @media (max-width: 720px) {
   .campo__control,
   .campo__control--mono {
@@ -411,14 +583,12 @@ body {
   }
 }
 
-/* --- Apuntador grueso (dedo), sin importar el ancho de la pantalla.
-   44 px es la altura minima recomendada para un objetivo tactil. */
 @media (pointer: coarse) {
   .boton,
   .chip {
     min-height: 44px;
-    padding-block: 10px;
-    touch-action: manipulation; /* quita el retardo de ~300 ms al tocar */
+    padding-block: 11px;
+    touch-action: manipulation;
   }
 
   .detalle summary {
@@ -427,85 +597,220 @@ body {
     align-items: center;
   }
 
-  input[type='range'] {
+  input[type="range"] {
     min-height: 44px;
-  }
-
-  .tabla-alfabeto li {
-    min-width: 46px;
-    padding: 6px 8px;
   }
 }
 
-/* --- Telefono.
-   Los tamaños tactiles se repiten aqui, y no solo en el bloque de
-   `pointer: coarse` de arriba, porque ese bloque no es confiable: medido con
-   Playwright, el navegador reporto `pointer: coarse` como falso y los
-   objetivos se quedaron en 37-41 px, con el `summary` en 22. Una pantalla de
-   520 px o menos casi siempre es un telefono, asi que el ancho es la señal que
-   sí se puede medir y sí se cumple. */
+/* Telefono. Los tamaños tactiles se repiten por ancho porque el navegador
+   no siempre reporta `pointer: coarse`: medido, lo reporto como falso y los
+   objetivos se quedaban chicos. */
 @media (max-width: 520px) {
   .app {
-    padding: 16px 14px 56px;
+    padding: 26px 16px 56px;
   }
 
   .panel {
-    padding: 16px;
+    padding-top: 30px;
+    margin-bottom: 34px;
   }
 
-  .app__titulo {
-    font-size: 1.45rem;
+  .resultado {
+    padding: 18px 16px;
+  }
+
+  .histograma svg {
+    height: 190px;
+  }
+
+  .curva svg {
+    height: 90px;
   }
 
   .boton,
   .chip {
     min-height: 44px;
-    padding-block: 10px;
+    padding-block: 11px;
     touch-action: manipulation;
   }
 
-  /* Lo que mas se toca en el telefono: abrir la tabla de indices y la
-     evidencia del analisis. Con 22 px de alto se falla el toque seguido. */
   .detalle summary {
     min-height: 44px;
     display: flex;
     align-items: center;
   }
 
-  input[type='range'] {
+  input[type="range"] {
     min-height: 44px;
   }
 
   .tabla-alfabeto li {
-    min-width: 46px;
-    padding: 6px 8px;
+    width: 44px;
+    height: 44px;
   }
 
-  /* El histograma es la firma visual del proyecto y con 95 barras el ancho ya
-     esta al limite (3.25 px por barra, medido), asi que se compensa con alto. */
-  .histograma svg {
-    height: 150px;
-  }
-
-  .curva svg {
-    height: 80px;
-  }
-
-  /* Los botones de accion, uno debajo del otro y a todo el ancho: mas facil de
-     atinar con el dedo que dos botones angostos lado a lado. */
   .presets .boton {
     flex: 1 1 100%;
   }
 }
 
-/* --- Computadora: dos columnas para no tener que bajar tanto.
-   Cifrar a la izquierda y descifrar a la derecha, con el alfabeto completo
-   arriba, que es el que manda sobre los otros dos. */
+/*
+ * Fondo propio para telefono: otra composicion, no la misma encogida.
+ *
+ * Medido a 390 px, la roseta grande no funcionaba: mide mas que la ventana, asi
+ * que solo se asomaba un recorte, y al estar fija el resto de la pagina (mas de
+ * 3000 px de alto) se quedaba liso. Encogerla la habria vuelto un adorno
+ * insignificante.
+ *
+ * La composicion de aqui es la de un manuscrito iluminado:
+ *   - la estrella COMPLETA arriba, del tamaño justo para que quepa entera, y
+ *     desvanecida hacia abajo para no competir con el texto;
+ *   - una cenefa vertical de estrellas enlazadas bajando por el margen, que sí
+ *     acompaña al scroll y decora la pagina entera.
+ */
+@media (max-width: 720px) {
+  /* La cenefa se posiciona contra el documento, no contra la ventana: sin esto
+     mediria el alto de la pantalla y no el de la pagina. */
+  body {
+    position: relative;
+  }
+
+  body::before {
+    background-position: center 88px;
+    background-size: min(88vw, 52vh) min(88vw, 52vh);
+    opacity: 0.22;
+    mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 34%, transparent 58%);
+    -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 34%, transparent 58%);
+  }
+
+  body::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 26px;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='52' viewBox='0 0 26 52'%3E%3Cg fill='none' stroke='%23d9ab4f' stroke-width='0.8' stroke-opacity='0.5'%3E%3Cpath d='M13 0V52'/%3E%3Cpath d='M13 13 23 26 13 39 3 26Z'/%3E%3Cpath d='M6 19 20 19 20 33 6 33Z'/%3E%3Ccircle cx='13' cy='26' r='2.6'/%3E%3Cpath d='M8 5 18 5M8 47 18 47'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: repeat-y;
+    background-size: 26px 52px;
+  }
+}
+
+/*
+ * Iluminacion al tocar.
+ *
+ * `App.jsx` guarda en --x y --y el punto exacto donde esta el puntero sobre el
+ * elemento, y aqui se dibuja ahi un halo dorado: la luz nace donde tocas, no en
+ * el centro. Al hacer clic se suma un destello de una sola pasada.
+ *
+ * Va en botones, chips y el bloque de resultado, pero NO en los paneles: el
+ * ornamento ◈ de cada panel esta colocado por fuera de su borde, y recortarlos
+ * para contener el halo lo cortaria.
+ */
+.boton,
+.chip,
+.resultado {
+  position: relative;
+  overflow: hidden;
+}
+
+.boton::after,
+.chip::after,
+.resultado::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  background: radial-gradient(
+    circle 130px at var(--x, 50%) var(--y, 50%),
+    rgb(217 171 79 / 26%) 0%,
+    rgb(217 171 79 / 8%) 42%,
+    transparent 72%
+  );
+}
+
+.boton:hover::after,
+.chip:hover::after,
+.resultado:hover::after {
+  opacity: 1;
+}
+
+/* El destello del clic: mas brillante y se apaga solo. */
+.encendido::after {
+  animation: destello 620ms ease-out;
+}
+
+@keyframes destello {
+  0% {
+    opacity: 1;
+    background: radial-gradient(
+      circle 40px at var(--x, 50%) var(--y, 50%),
+      rgb(217 171 79 / 55%) 0%,
+      transparent 70%
+    );
+  }
+
+  100% {
+    opacity: 0;
+    background: radial-gradient(
+      circle 320px at var(--x, 50%) var(--y, 50%),
+      rgb(217 171 79 / 0%) 0%,
+      transparent 75%
+    );
+  }
+}
+
+/* Cuando llega un descifrado nuevo, una franja dorada recorre el resultado. */
+.resultado::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  pointer-events: none;
+  transform: translateX(-130%);
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(217 171 79 / 14%) 50%,
+    transparent 100%
+  );
+}
+
+.resultado.encendido::before {
+  animation: barrido 900ms ease-out;
+}
+
+@keyframes barrido {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+/* Si el usuario pidio menos movimiento, se queda el halo pero sin animaciones. */
+@media (prefers-reduced-motion: reduce) {
+  .encendido::after,
+  .resultado.encendido::before {
+    animation: none;
+  }
+}
+
+/* Computadora: cifrar y descifrar en dos columnas, con el alfabeto completo
+   arriba, para no tener que bajar tanto. */
 @media (min-width: 900px) {
   .app {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    column-gap: 20px;
+    column-gap: 44px;
     align-items: start;
   }
 
@@ -521,10 +826,10 @@ body {
 
   .app__encabezado,
   section:nth-of-type(1) {
-    margin-bottom: 20px;
+    margin-bottom: 40px;
   }
 
   .app__pie {
-    margin-top: 20px;
+    margin-top: 40px;
   }
 }

@@ -83,6 +83,32 @@ export function PanelDescifrado({
     : null
   const desplazamiento = useDeslizamiento(desplazamientoFinal)
 
+  /*
+   * Cuando llega un resultado NUEVO, el bloque se enciende una sola vez y la
+   * franja dorada lo recorre. Sin esto, el barrido solo aparecia al tocarlo con
+   * el puntero, que no es lo mismo: la idea es anunciar el hallazgo.
+   *
+   * La firma incluye la clave y el largo del texto, para que dos descifrados
+   * distintos se anuncien y uno repetido no.
+   */
+  const firma = ganador
+    ? `${ganador.clave.a}:${ganador.clave.b}:${ganador.textoClaro.length}`
+    : null
+
+  useEffect(() => {
+    if (!firma) return undefined
+    const bloque = document.querySelector('.resultado')
+    if (!bloque) return undefined
+
+    bloque.classList.remove('encendido')
+    // Reiniciar la animacion: sin esto, dos resultados seguidos no la repiten.
+    void bloque.offsetWidth
+    bloque.classList.add('encendido')
+
+    const temporizador = setTimeout(() => bloque.classList.remove('encendido'), 950)
+    return () => clearTimeout(temporizador)
+  }, [firma])
+
   return (
     <section className="panel" aria-labelledby="titulo-descifrado">
       <header className="panel__encabezado">
