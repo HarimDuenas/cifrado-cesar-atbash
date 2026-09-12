@@ -9,7 +9,7 @@
  */
 
 /**
- * Rango imprimible del codigo ASCII: del espacio (32) a la virgulilla (126).
+ * [AL-01] Rango imprimible del codigo ASCII: del espacio (32) a la virgulilla (126).
  * Son 95 simbolos e incluye espacios, digitos, puntuacion, mayusculas y
  * minusculas. Es el alfabeto por defecto del programa.
  */
@@ -18,10 +18,10 @@ export const ASCII_IMPRIMIBLE = Array.from(
   (_, i) => String.fromCharCode(32 + i),
 ).join('')
 
-/** Alfabeto clasico del castellano, en mayusculas y con Ñ. Sin espacios. */
+/** [AL-02] Alfabeto clasico del castellano, en mayusculas y con Ñ. Sin espacios. */
 export const ESPANOL_MAYUSCULAS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'
 
-/** Alfabetos listos para elegir en la interfaz. */
+/** [AL-03] Alfabetos listos para elegir en la interfaz. */
 export const PRESETS = Object.freeze({
   asciiImprimible: Object.freeze({
     id: 'asciiImprimible',
@@ -36,7 +36,7 @@ export const PRESETS = Object.freeze({
 })
 
 /**
- * Modulo que siempre cae en el rango [0, m).
+ * [AL-04] Modulo que siempre cae en el rango [0, m).
  *
  * Hace falta porque el operador `%` de JavaScript conserva el signo del
  * dividendo: `-3 % 26` da `-3`, no `23`. Sin esta funcion, una clave negativa
@@ -60,7 +60,7 @@ export function modulo(a, m) {
  */
 
 /**
- * Construye un alfabeto validado a partir de una cadena o de una lista.
+ * [AL-05] Construye un alfabeto validado a partir de una cadena o de una lista.
  *
  * El texto se recorre con `Array.from`, que separa por code points y no por
  * unidades UTF-16: asi un emoji cuenta como un solo simbolo en vez de partirse

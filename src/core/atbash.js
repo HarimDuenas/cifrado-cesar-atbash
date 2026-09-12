@@ -17,11 +17,11 @@
 
 import { aplicarAfin } from './afin.js'
 
-/** El multiplicador que define a Atbash dentro de la familia afin. */
+/** [AT-01] El multiplicador que define a Atbash dentro de la familia afin. */
 export const A_ATBASH = -1
 
 /**
- * Clave afin equivalente a Atbash para un alfabeto de `n` simbolos.
+ * [AT-02] Clave afin equivalente a Atbash para un alfabeto de `n` simbolos.
  *
  * @param {number} n Tamaño del alfabeto.
  * @returns {import('./afin.js').ClaveAfin} La clave `{ a: -1, b: n - 1 }`.
@@ -31,7 +31,7 @@ export function claveAtbash(n) {
 }
 
 /**
- * Aplica Atbash. Sirve para cifrar y para descifrar, porque es su propia
+ * [AT-03] Aplica Atbash. Sirve para cifrar y para descifrar, porque es su propia
  * inversa: `atbash(atbash(texto)) === texto`.
  *
  * @param {string} texto Texto claro o criptograma, da lo mismo.
@@ -46,8 +46,8 @@ export function atbash(texto, alfabeto) {
   return aplicarAfin(texto, alfabeto, claveAtbash(alfabeto.n))
 }
 
-/** Alias explicito para leer el codigo de la interfaz sin ambiguedad. */
+/** [AT-04] Alias explicito para leer el codigo de la interfaz sin ambiguedad. */
 export const cifrarAtbash = atbash
 
-/** Alias explicito: es la misma operacion que cifrar. */
+/** [AT-05] Alias explicito: es la misma operacion que cifrar. */
 export const descifrarAtbash = atbash

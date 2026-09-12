@@ -33,25 +33,25 @@ import {
   referenciaParaAlfabeto,
 } from './frecuencias.js'
 
-/** Menos simbolos que esto y la estadistica no tiene de donde agarrarse. */
+/** [DT-01] Menos simbolos que esto y la estadistica no tiene de donde agarrarse. */
 export const MINIMO_SIMBOLOS = 12
 
 /**
- * Que tan arriba del azar tiene que estar el IC para dar por bueno que el
+ * [DT-02] Que tan arriba del azar tiene que estar el IC para dar por bueno que el
  * texto es monoalfabetico. 0 seria "cualquier cosa pasa" y 1 "solo si el IC es
  * identico al del español". 0.35 deja pasar textos cortos, donde el IC medido
  * baja por falta de muestra, y sigue rechazando texto aleatorio.
  */
 export const UMBRAL_IC = 0.35
 
-/** Cuantos candidatos del paso 1 pasan a la verificacion del paso 2. */
+/** [DT-03] Cuantos candidatos del paso 1 pasan a la verificacion del paso 2. */
 export const CANDIDATOS_A_VERIFICAR = 8
 
-/** Peso de cada juez al combinar la verificacion. Suman 1. */
+/** [DT-04] Peso de cada juez al combinar la verificacion. Suman 1. */
 export const PESOS = Object.freeze({ bigramas: 0.6, palabras: 0.4 })
 
 /**
- * Si la cobertura del alfabeto en el corpus es menor a esto, no hay tabla de
+ * [DT-05] Si la cobertura del alfabeto en el corpus es menor a esto, no hay tabla de
  * referencia util (por ejemplo, un alfabeto de puros emojis).
  */
 export const MINIMA_COBERTURA = 0.2
@@ -84,7 +84,7 @@ export const MINIMA_COBERTURA = 0.2
  */
 
 /**
- * Correlacion cruzada entre la referencia y el histograma observado para una
+ * [DT-06] Correlacion cruzada entre la referencia y el histograma observado para una
  * clave afin (a, b).
  *
  * @param {Float64Array} ref Proporciones esperadas por indice.
@@ -103,7 +103,7 @@ export function correlacion(ref, obs, a, b, n) {
 }
 
 /**
- * Todos los multiplicadores validos para un alfabeto de n simbolos.
+ * [DT-07] Todos los multiplicadores validos para un alfabeto de n simbolos.
  *
  * Cesar usa a = 1 y Atbash a = n - 1 (que es -1). Los demas valores invertibles
  * son los otros cifrados afines: se incluyen para que el sistema resuelva la
@@ -123,7 +123,7 @@ export function multiplicadoresValidos(n, soloCesarYAtbash = false) {
 }
 
 /**
- * Clasifica una clave dentro de la familia afin.
+ * [DT-08] Clasifica una clave dentro de la familia afin.
  *
  * @param {import('./afin.js').ClaveAfin} clave
  * @param {number} n Tamaño del alfabeto.
@@ -153,7 +153,7 @@ export function clasificar({ a, b }, n) {
 }
 
 /**
- * Convierte una lista de puntajes en probabilidades relativas (softmax con la
+ * [DT-09] Convierte una lista de puntajes en probabilidades relativas (softmax con la
  * escala tomada de los propios datos).
  *
  * La confianza no es un numero inventado: es que tanto se despega el mejor
@@ -190,7 +190,7 @@ function normalizar(valores) {
 }
 
 /**
- * Descifra un criptograma sin intervencion humana.
+ * [DT-10] Descifra un criptograma sin intervencion humana.
  *
  * @param {string} criptograma Texto cifrado.
  * @param {import('./alfabeto.js').Alfabeto} alfabeto El alfabeto con el que se cifro.
