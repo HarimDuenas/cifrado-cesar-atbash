@@ -103,12 +103,7 @@ export default function App() {
 
       <footer className="app__pie">
         <p>
-          <strong>El texto nunca sale de tu navegador.</strong> No hay servidor, no hay
-          telemetría y no se guarda nada: todo el cifrado y el análisis corren en esta página.
-        </p>
-        <p>
-          Cifrado didáctico: César y Atbash no protegen datos reales, y este mismo programa
-          demuestra por qué.
+          <strong>Realizado por:</strong> Harim Jesús Enrique Dueñas Dávila
         </p>
       </footer>
     </div>
