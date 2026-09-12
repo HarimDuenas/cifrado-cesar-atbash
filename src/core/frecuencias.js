@@ -12,10 +12,10 @@ import frecuenciasEs from '../data/frecuencias-es.json'
 import palabrasEs from '../data/palabras-es.json'
 import { bigramasDe, palabrasDe } from './texto.js'
 
-/** De donde salieron las tablas: URL del corpus, su SHA-256 y la fecha. */
+/** [FR-01] De donde salieron las tablas: URL del corpus, su SHA-256 y la fecha. */
 export const METADATOS_REFERENCIA = Object.freeze(frecuenciasEs.metadatos)
 
-/** IC del español medido sobre el corpus, y el de un texto al azar. */
+/** [FR-02] IC del español medido sobre el corpus, y el de un texto al azar. */
 export const IC_REFERENCIA = Object.freeze(frecuenciasEs.indiceDeCoincidencia)
 
 /** Proporcion de cada caracter en el corpus, tal cual (distingue mayusculas). */
@@ -24,7 +24,7 @@ const UNIGRAMAS = new Map(frecuenciasEs.unigramas)
 /** Proporcion de cada par de letras en el corpus reducido. */
 const BIGRAMAS = new Map(frecuenciasEs.bigramas)
 
-/** Las 5000 palabras mas usadas del corpus. */
+/** [FR-03] Las 5000 palabras mas usadas del corpus. */
 export const PALABRAS = new Set(palabrasEs.palabras)
 
 /**
@@ -35,7 +35,7 @@ export const PALABRAS = new Set(palabrasEs.palabras)
 const PISO_BIGRAMA = 1e-7
 
 /**
- * Se le suma a cada simbolo de la referencia para que ninguno quede en cero.
+ * [FR-04] Se le suma a cada simbolo de la referencia para que ninguno quede en cero.
  * Sin esto, un simbolo que no aparece en el corpus (un emoji, por ejemplo)
  * volveria imposible cualquier texto que lo use.
  */
@@ -49,7 +49,7 @@ export const SUAVIZADO = 1e-6
  */
 
 /**
- * Cuenta los simbolos de un texto segun su posicion en el alfabeto.
+ * [FR-05] Cuenta los simbolos de un texto segun su posicion en el alfabeto.
  *
  * Los caracteres que no pertenecen al alfabeto se ignoran: no fueron cifrados,
  * asi que no dicen nada sobre la clave.
@@ -79,7 +79,7 @@ export function histograma(texto, alfabeto) {
 }
 
 /**
- * Indice de coincidencia: la probabilidad de que dos simbolos tomados al azar
+ * [FR-06] Indice de coincidencia: la probabilidad de que dos simbolos tomados al azar
  * del texto resulten ser el mismo.
  *
  *     IC = Σ nᵢ(nᵢ - 1) / [ n(n - 1) ]
@@ -108,7 +108,7 @@ export function indiceDeCoincidencia(conteos, total) {
  */
 
 /**
- * Proyecta la tabla del español sobre el alfabeto que eligio el usuario.
+ * [FR-07] Proyecta la tabla del español sobre el alfabeto que eligio el usuario.
  *
  * La tabla trae proporciones de todo el corpus, pero el alfabeto puede ser
  * cualquier subconjunto (o incluir simbolos que el corpus no tiene). Se toman
@@ -184,7 +184,7 @@ export function referenciaParaAlfabeto(alfabeto) {
 }
 
 /**
- * Que tan español se ve un texto segun sus pares de letras.
+ * [FR-08] Que tan español se ve un texto segun sus pares de letras.
  *
  * Devuelve el promedio del logaritmo de la probabilidad de cada bigrama. Es un
  * numero negativo: mas cerca de cero, mas parecido al español. Sirve para
@@ -206,7 +206,7 @@ export function puntajeBigramas(texto) {
 }
 
 /**
- * Que proporcion de las letras del texto forman palabras que existen.
+ * [FR-09] Que proporcion de las letras del texto forman palabras que existen.
  *
  * Se pesa por longitud: acertar "constantinopla" dice mucho mas que acertar
  * "de". Es el juez que salva los textos cortos, donde las frecuencias solas no

@@ -22,7 +22,7 @@ import { modulo } from './alfabeto.js'
  */
 
 /**
- * Maximo comun divisor por el algoritmo de Euclides.
+ * [AF-01] Maximo comun divisor por el algoritmo de Euclides.
  *
  * @param {number} a
  * @param {number} b
@@ -38,7 +38,7 @@ export function mcd(a, b) {
 }
 
 /**
- * Dice si `a` sirve como multiplicador de un cifrado afin con modulo `n`.
+ * [AF-02] Dice si `a` sirve como multiplicador de un cifrado afin con modulo `n`.
  *
  * Solo sirve si `a` y `n` no comparten divisores: si los comparten, la
  * operacion manda dos simbolos distintos al mismo resultado y el mensaje deja
@@ -54,7 +54,7 @@ export function esInvertible(a, n) {
 }
 
 /**
- * Inverso multiplicativo de `a` modulo `n`: el numero que cumple
+ * [AF-03] Inverso multiplicativo de `a` modulo `n`: el numero que cumple
  * `a · inverso ≡ 1 (mod n)`. Es la pieza que permite deshacer la
  * multiplicacion al descifrar.
  *
@@ -88,7 +88,7 @@ export function inversoModular(a, n) {
 }
 
 /**
- * Clave que deshace a otra: si `C(i) = (a·i + b) mod N`, su inversa es
+ * [AF-04] Clave que deshace a otra: si `C(i) = (a·i + b) mod N`, su inversa es
  * `P(j) = (a⁻¹·j - a⁻¹·b) mod N`.
  *
  * @param {ClaveAfin} clave Clave original.
@@ -101,7 +101,7 @@ export function claveInversa({ a, b }, n) {
 }
 
 /**
- * Aplica una clave afin a un texto, simbolo por simbolo.
+ * [AF-05] Aplica una clave afin a un texto, simbolo por simbolo.
  *
  * Los caracteres que no pertenecen al alfabeto **pasan sin cambio**. Es una
  * decision de diseño: si se descartaran, el mensaje descifrado no coincidiria

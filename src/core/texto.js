@@ -11,13 +11,13 @@
  * necesita poder correr sin ellos. Si se cambia una, hay que cambiar la otra.
  */
 
-/** Letras del español en minusculas, mas el espacio. */
+/** [TX-01] Letras del español en minusculas, mas el espacio. */
 export const LETRAS_Y_ESPACIO = 'abcdefghijklmnñopqrstuvwxyz '
 
 const PERMITIDAS = new Set(Array.from(LETRAS_Y_ESPACIO))
 
 /**
- * Quita tildes y dieresis pero conserva la Ñ.
+ * [TX-02] Quita tildes y dieresis pero conserva la Ñ.
  *
  * Descompone (NFD) y borra solo el acento agudo (U+0301) y la dieresis
  * (U+0308). La virgulilla de la Ñ es U+0303 y se deja: borrar todas las marcas
@@ -31,7 +31,7 @@ export function quitarTildes(texto) {
 }
 
 /**
- * Deja el texto en minusculas, sin tildes y con solo letras y espacios simples.
+ * [TX-03] Deja el texto en minusculas, sin tildes y con solo letras y espacios simples.
  *
  * @param {string} texto
  * @returns {string} Texto reducido, sin espacios repetidos ni al inicio o final.
@@ -45,7 +45,7 @@ export function reducir(texto) {
 }
 
 /**
- * Pares de caracteres consecutivos del texto reducido.
+ * [TX-04] Pares de caracteres consecutivos del texto reducido.
  *
  * @param {string} texto
  * @returns {string[]} Lista de bigramas; vacia si el texto reducido es muy corto.
@@ -60,7 +60,7 @@ export function bigramasDe(texto) {
 }
 
 /**
- * Palabras del texto reducido, de 2 a 20 caracteres.
+ * [TX-05] Palabras del texto reducido, de 2 a 20 caracteres.
  *
  * @param {string} texto
  * @returns {string[]}

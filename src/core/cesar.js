@@ -9,11 +9,11 @@
 import { aplicarAfin } from './afin.js'
 import { modulo } from './alfabeto.js'
 
-/** El multiplicador que define a Cesar dentro de la familia afin. */
+/** [CS-01] El multiplicador que define a Cesar dentro de la familia afin. */
 export const A_CESAR = 1
 
 /**
- * Normaliza un desplazamiento a su equivalente en [0, N).
+ * [CS-02] Normaliza un desplazamiento a su equivalente en [0, N).
  *
  * Un `k` de 112 sobre 95 simbolos es el mismo cifrado que un `k` de 17, y un
  * `k` de -1 es el mismo que 94. Se normaliza para poder mostrarle al usuario
@@ -32,7 +32,7 @@ export function normalizarDesplazamiento(k, n) {
 }
 
 /**
- * Cifra con Cesar.
+ * [CS-03] Cifra con Cesar.
  *
  * @param {string} texto Texto claro.
  * @param {import('./alfabeto.js').Alfabeto} alfabeto Alfabeto con el que se cifra.
@@ -50,7 +50,7 @@ export function cifrarCesar(texto, alfabeto, k) {
 }
 
 /**
- * Descifra un Cesar del que ya se conoce el desplazamiento.
+ * [CS-04] Descifra un Cesar del que ya se conoce el desplazamiento.
  *
  * Es la misma operacion en sentido contrario: correr el alfabeto `-k` lugares.
  *
