@@ -130,7 +130,7 @@ su fuente:
 
 ```bash
 # Hash del paquete que sirve el sitio
-curl -s https://harimduenas.github.io/cifrado-cesar-atbash/assets/index-Cefm0WOY.js | sha256sum
+curl -s https://harimduenas.github.io/cifrado-cesar-atbash/assets/index-TZzFLUQ4.js | sha256sum
 
 # Hash del mismo paquete construido desde este repositorio
 npm ci && npm run build && sha256sum dist/assets/index-*.js
@@ -139,7 +139,7 @@ npm ci && npm run build && sha256sum dist/assets/index-*.js
 Los dos deben dar:
 
 ```
-65da024fed768efd8fdab99065d4b3fe3c057d1f1a1a865a18a9140791002fd3
+eb64a59b1f6dcfc37cd8631ae922965327e05cd3d5206619a4d96caac7d78772
 ```
 
 Comprobado el 2026-09-11 contra el sitio en línea: **coinciden**, así que lo publicado es
@@ -151,7 +151,7 @@ Además, cada despliegue genera una **prueba firmada de procedencia** (GitHub la
 Sigstore), que se comprueba sin confiar en este archivo:
 
 ```bash
-gh attestation verify dist/assets/index-Cefm0WOY.js -R HarimDuenas/cifrado-cesar-atbash
+gh attestation verify dist/assets/index-TZzFLUQ4.js -R HarimDuenas/cifrado-cesar-atbash
 ```
 
 Eso liga el paquete con el commit y el workflow exactos que lo construyeron.
