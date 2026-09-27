@@ -5,6 +5,7 @@ import {
   ESPANOL_MAYUSCULAS,
   crearAlfabeto,
   modulo,
+  quitarRepetidos,
 } from '../src/core/alfabeto.js'
 import {
   aplicarAfin,
@@ -56,6 +57,25 @@ describe('alfabeto', () => {
     const alfabeto = crearAlfabeto(`AB${'ñ'}`)
     expect(alfabeto.n).toBe(3)
     expect(alfabeto.indiceDe('ñ')).toBe(2)
+  })
+
+  it('quitarRepetidos deja la primera aparicion y dice que quito', () => {
+    expect(quitarRepetidos('HOLA MUNDO')).toEqual({ simbolos: 'HOLA MUND', repetidos: ['O'] })
+    expect(quitarRepetidos('MISSISSIPPI')).toEqual({ simbolos: 'MISP', repetidos: ['S', 'I', 'P'] })
+    expect(quitarRepetidos('ABC')).toEqual({ simbolos: 'ABC', repetidos: [] })
+    expect(quitarRepetidos('')).toEqual({ simbolos: '', repetidos: [] })
+  })
+
+  it('quitarRepetidos cuenta igual que crearAlfabeto: emojis y ñ compuesta', () => {
+    expect(quitarRepetidos('👍🎯👍')).toEqual({ simbolos: '👍🎯', repetidos: ['👍'] })
+    // "ñ" precompuesta y "n + tilde combinable" son el mismo simbolo tras NFC.
+    const { simbolos, repetidos } = quitarRepetidos('ñAñ')
+    expect(repetidos).toEqual(['ñ'])
+    expect(crearAlfabeto(simbolos).n).toBe(2)
+  })
+
+  it('lo que devuelve quitarRepetidos siempre es un alfabeto valido', () => {
+    expect(crearAlfabeto(quitarRepetidos('MURCIÉLAGO ARRIBA').simbolos).n).toBe(12)
   })
 
   it('el modulo nunca devuelve negativos', () => {

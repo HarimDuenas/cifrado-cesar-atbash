@@ -131,3 +131,41 @@ export function crearAlfabeto(entrada, { normalizar = true } = {}) {
     },
   })
 }
+
+/**
+ * [AL-06] Deja cada simbolo una sola vez, en el lugar de su primera aparicion.
+ *
+ * `crearAlfabeto` sigue rechazando repetidos a proposito: esta funcion es la
+ * que se aplica ANTES, sobre lo que escribe el usuario, y devuelve tambien lo
+ * que quito para que la interfaz lo diga en vez de corregirlo en silencio.
+ * Usa la misma normalizacion y la misma separacion por code points que
+ * `crearAlfabeto`, para que las dos cuenten los simbolos igual.
+ *
+ * @param {string} entrada Texto crudo del alfabeto.
+ * @param {object} [opciones]
+ * @param {boolean} [opciones.normalizar=true] Normaliza a NFC antes de comparar.
+ * @returns {{ simbolos: string, repetidos: string[] }} La cadena sin repetidos y
+ *   la lista de simbolos que aparecian mas de una vez, en orden de aparicion.
+ *
+ * @example
+ * quitarRepetidos('HOLA MUNDO')
+ * // { simbolos: 'HOLA MUND', repetidos: ['O'] }
+ */
+export function quitarRepetidos(entrada, { normalizar = true } = {}) {
+  const fuente = String(entrada ?? '')
+  const simbolos = Array.from(normalizar ? fuente.normalize('NFC') : fuente)
+
+  const vistos = new Set()
+  const repetidos = new Set()
+  const unicos = []
+  for (const simbolo of simbolos) {
+    if (vistos.has(simbolo)) {
+      repetidos.add(simbolo)
+    } else {
+      vistos.add(simbolo)
+      unicos.push(simbolo)
+    }
+  }
+
+  return { simbolos: unicos.join(''), repetidos: [...repetidos] }
+}
