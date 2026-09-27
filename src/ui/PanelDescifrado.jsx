@@ -147,6 +147,20 @@ export function PanelDescifrado({
             índice de coincidencia {resultado.ic.toFixed(4)} contra {resultado.icEsperado.toFixed(4)}{' '}
             del español ({resultado.icAleatorio.toFixed(4)} sería texto al azar)
           </p>
+          {/* El detector solo puede dar la k dentro de [0, N): con N = 95, cifrar
+              con 15 y con 300 produce el MISMO criptograma, asi que no hay forma
+              de distinguirlas. Se dice aqui para que "cifre con 300 y me dice 15"
+              no parezca un error. */}
+          {ganador.desplazamiento !== null && alfabeto ? (
+            <p className="resultado__meta">
+              Cualquier k que deje residuo {ganador.desplazamiento} al dividir entre {alfabeto.n}{' '}
+              produce este mismo criptograma:{' '}
+              {[0, 1, 2, 3].map((vueltas) => ganador.desplazamiento + vueltas * alfabeto.n).join(', ')}
+              … en general, <strong>k = {ganador.desplazamiento} + {alfabeto.n}·m</strong> para
+              cualquier entero m. Por eso una k grande aparece aquí como su equivalente dentro del
+              alfabeto.
+            </p>
+          ) : null}
           <pre className="salida">{ganador.textoClaro}</pre>
         </div>
       ) : null}
