@@ -288,6 +288,12 @@ body::before {
   color: var(--tinta-suave);
 }
 
+/* Una k de 40 digitos no cabe en un telefono: se parte donde haga falta. */
+.estado--k {
+  overflow-wrap: anywhere;
+  margin-bottom: 18px;
+}
+
 .estado--error {
   color: var(--alerta);
   font-weight: 700;
