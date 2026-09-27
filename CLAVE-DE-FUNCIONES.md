@@ -29,6 +29,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[AL-03]` | `PRESETS` | Los dos alfabetos anteriores, listos para elegir en la interfaz con su nombre visible |
 | `[AL-04]` | `modulo` | Operación de módulo que siempre devuelve un valor entre 0 y N−1. Existe porque el residuo de JavaScript conserva el signo del dividendo, así que una clave negativa se saldría del alfabeto |
 | `[AL-05]` | `crearAlfabeto` | Construye el alfabeto validado: normaliza a NFC, separa por *code points* (para no partir emojis), rechaza alfabetos de menos de dos símbolos y los que tienen repetidos, e indexa cada símbolo para buscarlo en tiempo constante |
+| `[AL-06]` | `quitarRepetidos` | Limpia el alfabeto que escribe el usuario: deja cada símbolo una sola vez, en el lugar de su primera aparición, y devuelve la lista de los que quitó para que la interfaz lo avise. Normaliza y separa igual que `[AL-05]`, que sigue rechazando repetidos si se le pasan directo |
 
 ## AF · El cifrado afín
 
