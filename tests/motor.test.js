@@ -14,7 +14,12 @@ import {
   inversoModular,
   mcd,
 } from '../src/core/afin.js'
-import { cifrarCesar, descifrarCesar, normalizarDesplazamiento } from '../src/core/cesar.js'
+import {
+  cifrarCesar,
+  descifrarCesar,
+  normalizarDesplazamiento,
+  reducirDesplazamiento,
+} from '../src/core/cesar.js'
 import { atbash, claveAtbash } from '../src/core/atbash.js'
 
 const ascii = crearAlfabeto(ASCII_IMPRIMIBLE)
@@ -145,6 +150,35 @@ describe('Cesar', () => {
     expect(normalizarDesplazamiento(-1, 95)).toBe(94)
     expect(cifrarCesar(FRASE, ascii, 112)).toBe(cifrarCesar(FRASE, ascii, 17))
     expect(cifrarCesar(FRASE, ascii, -1)).toBe(cifrarCesar(FRASE, ascii, 94))
+  })
+
+  it('reduce desplazamientos escritos como texto, sin limite de tamaño', () => {
+    expect(reducirDesplazamiento('300', 95)).toBe(15)
+    expect(reducirDesplazamiento('1000', 95)).toBe(50)
+    expect(reducirDesplazamiento('1000', 27)).toBe(1)
+    expect(reducirDesplazamiento('-5', 95)).toBe(90)
+    expect(reducirDesplazamiento('+17', 95)).toBe(17)
+    expect(reducirDesplazamiento(' 300 ', 95)).toBe(15)
+    // Coincide con la version numerica mientras el number es exacto.
+    for (const k of [0, 94, 95, 112, -1, -96, 2 ** 53 - 1]) {
+      expect(reducirDesplazamiento(String(k), 95)).toBe(normalizarDesplazamiento(k, 95))
+    }
+  })
+
+  it('con k de mas de 16 digitos el residuo sigue siendo exacto', () => {
+    // 10^17 deja residuo 40 entre 95, asi que 10^17 + 1 deja 41. Como number,
+    // 10^17 + 1 se redondea a 10^17 y la version numerica da 40: justo el
+    // error que evita BigInt.
+    expect(reducirDesplazamiento('100000000000000001', 95)).toBe(41)
+    expect(normalizarDesplazamiento(Number('100000000000000001'), 95)).toBe(40)
+    const k = '123456789012345678901234567890'
+    expect(reducirDesplazamiento(k, 95)).toBe(Number(BigInt(k) % 95n))
+  })
+
+  it('rechaza lo que no es un entero', () => {
+    for (const malo of ['', '-', '1.5', 'abc', '3e5', '1 000']) {
+      expect(() => reducirDesplazamiento(malo, 95)).toThrow(/numero entero/)
+    }
   })
 
   it('con k = 0 no cambia nada', () => {
