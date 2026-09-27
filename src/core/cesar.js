@@ -32,6 +32,33 @@ export function normalizarDesplazamiento(k, n) {
 }
 
 /**
+ * [CS-05] Reduce un desplazamiento escrito como texto, de cualquier tamaño.
+ *
+ * Es `normalizarDesplazamiento` para lo que escribe el usuario. Se hace con
+ * BigInt porque un `number` pierde precision arriba de 2^53: con k de 17
+ * digitos, `k % 95` ya da un residuo equivocado y el cifrado no coincidiria con
+ * la k que se muestra. Con BigInt el residuo es exacto sin importar los digitos.
+ *
+ * @param {string} entrada Entero en decimal, con signo opcional ("300", "-5").
+ * @param {number} n Tamaño del alfabeto.
+ * @returns {number} El desplazamiento equivalente en [0, N).
+ * @throws {Error} Si la entrada no es un entero.
+ *
+ * @example
+ * reducirDesplazamiento('300', 95)                    // 15
+ * reducirDesplazamiento('-1', 95)                     // 94
+ * reducirDesplazamiento('123456789012345678901', 95)  // exacto, sin redondeo
+ */
+export function reducirDesplazamiento(entrada, n) {
+  const limpia = String(entrada ?? '').trim()
+  if (!/^[+-]?\d+$/.test(limpia)) {
+    throw new Error(`El desplazamiento debe ser un numero entero y recibio "${limpia}".`)
+  }
+  const m = BigInt(n)
+  return Number(((BigInt(limpia) % m) + m) % m)
+}
+
+/**
  * [CS-03] Cifra con Cesar.
  *
  * @param {string} texto Texto claro.

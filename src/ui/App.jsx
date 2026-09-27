@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { ASCII_IMPRIMIBLE, crearAlfabeto, quitarRepetidos } from '../core/alfabeto.js'
-import { cifrarCesar } from '../core/cesar.js'
+import { cifrarCesar, reducirDesplazamiento } from '../core/cesar.js'
 import { atbash } from '../core/atbash.js'
 import { detectar } from '../core/detector.js'
 import { histograma, referenciaParaAlfabeto } from '../core/frecuencias.js'
@@ -38,7 +38,11 @@ export default function App() {
   const [entradaAlfabeto, setEntradaAlfabeto] = useState(ASCII_IMPRIMIBLE)
   const [textoClaro, setTextoClaro] = useState(FRASE_DE_EJEMPLO)
   const [metodo, setMetodo] = useState('cesar')
-  const [k, setK] = useState(17)
+  // La k se guarda tal como se escribe, sin limite de tamaño. De ahi sale una
+  // sola k efectiva, con la que se cifra Y la que se muestra: antes la caja
+  // recortaba a N - 1 mientras el motor reducia modulo N, y la pantalla decia
+  // una k distinta a la que se habia usado.
+  const [entradaK, setEntradaK] = useState('17')
   const [criptograma, setCriptograma] = useState('')
 
   /*
@@ -119,12 +123,21 @@ export default function App() {
     [alfabeto],
   )
 
+  // null mientras la k no sea un entero (vacia, "-", "1.5"...).
+  const kEfectiva = useMemo(() => {
+    if (!alfabeto) return null
+    try {
+      return reducirDesplazamiento(entradaK, alfabeto.n)
+    } catch {
+      return null
+    }
+  }, [alfabeto, entradaK])
+
   const cifrado = useMemo(() => {
     if (!alfabeto) return ''
-    return metodo === 'cesar'
-      ? cifrarCesar(textoClaro, alfabeto, k)
-      : atbash(textoClaro, alfabeto)
-  }, [alfabeto, textoClaro, metodo, k])
+    if (metodo === 'atbash') return atbash(textoClaro, alfabeto)
+    return kEfectiva === null ? '' : cifrarCesar(textoClaro, alfabeto, kEfectiva)
+  }, [alfabeto, textoClaro, metodo, kEfectiva])
 
   const deteccion = useMemo(() => {
     if (!alfabeto || criptograma.trim() === '') return null
@@ -162,8 +175,9 @@ export default function App() {
         onTexto={setTextoClaro}
         metodo={metodo}
         onMetodo={setMetodo}
-        k={k}
-        onK={setK}
+        entradaK={entradaK}
+        onEntradaK={setEntradaK}
+        kEfectiva={kEfectiva}
         criptograma={cifrado}
         error={error}
         onEnviarADescifrar={() => setCriptograma(cifrado)}

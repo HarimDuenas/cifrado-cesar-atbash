@@ -49,6 +49,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[CS-02]` | `normalizarDesplazamiento` | Lleva cualquier clave a su equivalente dentro del alfabeto: con 95 símbolos, 112 se trata como 17 y −1 como 94 |
 | `[CS-03]` | `cifrarCesar` | Cifra corriendo cada símbolo k lugares dentro del alfabeto |
 | `[CS-04]` | `descifrarCesar` | Descifra un César del que ya se conoce la clave: la misma operación con el desplazamiento en negativo |
+| `[CS-05]` | `reducirDesplazamiento` | Lo mismo que `[CS-02]`, pero para la clave que escribe el usuario como texto y sin límite de tamaño: calcula el residuo con enteros de precisión arbitraria, así que k = 300 da 15 y una k de 30 dígitos da su residuo exacto. Rechaza lo que no sea un entero |
 
 ## AT · Atbash
 
