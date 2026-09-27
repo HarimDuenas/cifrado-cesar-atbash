@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { ASCII_IMPRIMIBLE, crearAlfabeto } from '../core/alfabeto.js'
+import { ASCII_IMPRIMIBLE, crearAlfabeto, quitarRepetidos } from '../core/alfabeto.js'
 import { cifrarCesar } from '../core/cesar.js'
 import { atbash } from '../core/atbash.js'
 import { detectar } from '../core/detector.js'
@@ -101,13 +101,16 @@ export default function App() {
     }
   }, [])
 
-  // El alfabeto puede ser invalido mientras el usuario escribe (un simbolo
-  // repetido, por ejemplo), asi que se construye dentro de un try.
-  const { alfabeto, error } = useMemo(() => {
+  // Lo que escribe el usuario se limpia de repetidos antes de construir el
+  // alfabeto: asi cualquier cadena sirve ("HOLA MUNDO" queda en 9 simbolos) y
+  // el panel avisa que quito. Aun puede ser invalido mientras escribe (menos de
+  // dos simbolos), asi que se construye dentro de un try.
+  const { alfabeto, error, repetidos } = useMemo(() => {
+    const limpio = quitarRepetidos(entradaAlfabeto)
     try {
-      return { alfabeto: crearAlfabeto(entradaAlfabeto), error: null }
+      return { alfabeto: crearAlfabeto(limpio.simbolos), error: null, repetidos: limpio.repetidos }
     } catch (falla) {
-      return { alfabeto: null, error: falla.message }
+      return { alfabeto: null, error: falla.message, repetidos: limpio.repetidos }
     }
   }, [entradaAlfabeto])
 
@@ -149,6 +152,7 @@ export default function App() {
         onCambiar={setEntradaAlfabeto}
         alfabeto={alfabeto}
         error={error}
+        repetidos={repetidos}
         cobertura={referencia?.cobertura ?? 0}
       />
 

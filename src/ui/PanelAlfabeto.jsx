@@ -7,7 +7,15 @@
  * estadistica con la que se ataca.
  */
 
+import { useRef } from 'react'
+
 import { PRESETS } from '../core/alfabeto.js'
+
+/** Ejemplo de alfabeto fuera de ASCII: las 27 letras mas un espacio y dos emojis. */
+const CON_EMOJIS = `${PRESETS.espanolMayusculas.simbolos} 👍🎯`
+
+/** Hasta cuantos simbolos se listan junto al estado; mas que eso es ruido. */
+const LISTAR_HASTA = 40
 
 /**
  * Vuelve visible un simbolo que de otro modo no se ve.
@@ -28,10 +36,21 @@ function visible(simbolo) {
  * @param {(valor: string) => void} props.onCambiar Se llama con el texto nuevo.
  * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto Alfabeto valido, o null.
  * @param {string | null} props.error Mensaje de validacion, si hay.
+ * @param {string[]} props.repetidos Simbolos que se quitaron por aparecer mas de una vez.
  * @param {number} props.cobertura Que parte del corpus del español cubre (0 a 1).
  */
-export function PanelAlfabeto({ entrada, onCambiar, alfabeto, error, cobertura }) {
+export function PanelAlfabeto({ entrada, onCambiar, alfabeto, error, repetidos, cobertura }) {
+  const campo = useRef(null)
   const preset = Object.values(PRESETS).find((opcion) => opcion.simbolos === entrada)
+  const conEmojis = entrada === CON_EMOJIS
+  const personalizado = !preset && !conEmojis
+  // Vacio no es un error: es el punto de partida de "Personalizado".
+  const vacio = entrada === ''
+
+  const empezarPersonalizado = () => {
+    onCambiar('')
+    campo.current?.focus()
+  }
 
   return (
     <section className="panel" aria-labelledby="titulo-alfabeto">
@@ -57,36 +76,64 @@ export function PanelAlfabeto({ entrada, onCambiar, alfabeto, error, cobertura }
         ))}
         <button
           type="button"
-          className="chip"
-          onClick={() => onCambiar(`${PRESETS.espanolMayusculas.simbolos} 👍🎯`)}
+          className={`chip ${conEmojis ? 'chip--activo' : ''}`}
+          onClick={() => onCambiar(CON_EMOJIS)}
+          aria-pressed={conEmojis}
         >
           Con emojis
+        </button>
+        <button
+          type="button"
+          className={`chip ${personalizado ? 'chip--activo' : ''}`}
+          onClick={empezarPersonalizado}
+          aria-pressed={personalizado}
+        >
+          Personalizado
         </button>
       </div>
 
       <label className="campo">
         <span className="campo__etiqueta">Símbolos del alfabeto</span>
         <textarea
+          ref={campo}
           className="campo__control campo__control--mono"
           value={entrada}
           spellCheck={false}
           rows={3}
+          placeholder="Escribe los símbolos de tu alfabeto, en orden. Ejemplo: MURCIELAGO"
           onChange={(evento) => onCambiar(evento.target.value)}
           aria-describedby="estado-alfabeto"
         />
       </label>
 
-      <p id="estado-alfabeto" className={`estado ${error ? 'estado--error' : ''}`} role="status">
-        {error ? (
+      <p
+        id="estado-alfabeto"
+        className={`estado ${error && !vacio ? 'estado--error' : ''}`}
+        role="status"
+      >
+        {vacio ? (
+          'Escribe los símbolos de tu alfabeto: cualquier cadena sirve, con al menos 2 símbolos distintos.'
+        ) : error ? (
           error
         ) : (
           <>
-            <strong>N = {alfabeto?.n ?? 0}</strong> símbolos · módulo aritmético del cifrado ·
-            cobertura del español: <strong>{(cobertura * 100).toFixed(0)}%</strong>
-            {cobertura < 0.2 && ' — sin referencia estadística, la detección automática no aplica'}
+            <strong>N = {alfabeto?.n ?? 0}</strong> símbolos
+            {alfabeto && alfabeto.n <= LISTAR_HASTA && `: ${alfabeto.simbolos.map(visible).join(' ')}`}
+            {' · '}módulo aritmético del cifrado · cobertura del español:{' '}
+            <strong>{(cobertura * 100).toFixed(0)}%</strong>
+            {cobertura < 0.2 &&
+              '. Con tan pocas letras del español el cifrado funciona igual, pero la detección automática no tiene contra qué comparar y no aplica.'}
           </>
         )}
       </p>
+
+      {!vacio && repetidos.length > 0 && (
+        <p className="estado">
+          {repetidos.length === 1 ? 'Se quitó 1 repetido: ' : `Se quitaron ${repetidos.length} repetidos: `}
+          <strong>{repetidos.map((simbolo) => `"${visible(simbolo)}"`).join(', ')}</strong>
+          {' '}(cada símbolo cuenta solo la primera vez que aparece).
+        </p>
+      )}
 
       {alfabeto && (
         <details className="detalle">
