@@ -32,6 +32,7 @@ import {
   puntajeBigramas,
   referenciaParaAlfabeto,
 } from './frecuencias.js'
+import { legibilidad } from './texto.js'
 
 /** [DT-01] Menos simbolos que esto y la estadistica no tiene de donde agarrarse. */
 export const MINIMO_SIMBOLOS = 12
@@ -44,17 +45,44 @@ export const MINIMO_SIMBOLOS = 12
  */
 export const UMBRAL_IC = 0.35
 
-/** [DT-03] Cuantos candidatos del paso 1 pasan a la verificacion del paso 2. */
+/**
+ * [DT-03] Cuantos candidatos, ya verificados, se muestran como evidencia y entran
+ * al calculo de la confianza.
+ */
 export const CANDIDATOS_A_VERIFICAR = 8
 
-/** [DT-04] Peso de cada juez al combinar la verificacion. Suman 1. */
-export const PESOS = Object.freeze({ bigramas: 0.6, palabras: 0.4 })
+/**
+ * [DT-04] Peso de cada juez al combinar la verificacion. Suman 1.
+ *
+ * `simbolos` es el juez que mira TODO lo descifrado, no solo las letras: sin el,
+ * con alfabetos de cientos de simbolos una clave equivocada convertia casi todo
+ * en simbolos raros, esos simbolos se borraban antes de calificar y lo poco que
+ * quedaba ("e e a de dad") parecia español. Asi fallo el examen.
+ */
+export const PESOS = Object.freeze({ bigramas: 0.35, palabras: 0.3, simbolos: 0.35 })
 
 /**
  * [DT-05] Si la cobertura del alfabeto en el corpus es menor a esto, no hay tabla de
  * referencia util (por ejemplo, un alfabeto de puros emojis).
  */
 export const MINIMA_COBERTURA = 0.2
+
+/**
+ * [DT-11] Cuantas claves, las mas verosimiles simbolo por simbolo, pasan a la
+ * verificacion con bigramas y palabras.
+ *
+ * El filtro va primero a proposito: los jueces de bigramas y palabras borran
+ * todo lo que no es letra antes de calificar, asi que un descifrado basura como
+ * "VA#?A/A#>" les parece "va a a" y saca 100% de palabras. La verosimilitud si
+ * cuenta esos simbolos, y los deja fuera antes de que lleguen a los otros jueces.
+ */
+export const PRESELECCION = 32
+
+/**
+ * Probabilidad minima que se le asigna a un simbolo que el español no usa, para
+ * que su logaritmo sea un castigo fuerte y no -Infinity.
+ */
+const PISO_SIMBOLO = 1e-5
 
 /**
  * @typedef {object} Candidato
@@ -65,7 +93,8 @@ export const MINIMA_COBERTURA = 0.2
  * @property {string} textoClaro El texto descifrado con esa clave.
  * @property {number} bigramas Log-probabilidad promedio de sus pares de letras.
  * @property {number} palabras Proporcion de letras en palabras reconocidas.
- * @property {number} puntaje Combinacion de los dos jueces.
+ * @property {number} simbolos Log-probabilidad promedio de cada simbolo descifrado.
+ * @property {number} puntaje Combinacion de los tres jueces.
  */
 
 /**
@@ -100,6 +129,54 @@ export function correlacion(ref, obs, a, b, n) {
     suma += ref[i] * obs[modulo(a * i + b, n)]
   }
   return suma
+}
+
+/**
+ * [DT-12] Que tan español es, simbolo por simbolo, lo que produce una clave.
+ *
+ * Promedio de log10 de la frecuencia esperada de cada simbolo descifrado,
+ * contando TODOS los simbolos del alfabeto que trae el criptograma. Un simbolo
+ * que el español no usa cuesta -5; una letra comun, cerca de -1. Es el juez
+ * que no se deja engañar por un descifrado lleno de simbolos raros.
+ *
+ * @param {ArrayLike<number>} conteos Cuantas veces aparece cada indice en el criptograma.
+ * @param {Float64Array} ref Proporciones esperadas por indice.
+ * @param {import('./afin.js').ClaveAfin} clave Clave de cifrado supuesta.
+ * @param {number} n Tamaño del alfabeto.
+ * @returns {number} Log-probabilidad promedio por simbolo (mas alto es mejor).
+ */
+export function verosimilitud(conteos, ref, clave, n) {
+  const { a, b } = claveInversa(clave, n)
+  let suma = 0
+  let total = 0
+  for (let j = 0; j < n; j += 1) {
+    if (conteos[j] === 0) continue
+    suma += conteos[j] * Math.log10(Math.max(ref[modulo(a * j + b, n)], PISO_SIMBOLO))
+    total += conteos[j]
+  }
+  return total > 0 ? suma / total : -Infinity
+}
+
+/**
+ * [DT-13] La referencia con mayusculas y minusculas sumadas.
+ *
+ * En el corpus casi todo va en minuscula, asi que en un alfabeto que tiene las
+ * dos, la "E" pesa mucho menos que la "e". Para el juez de simbolos eso castiga
+ * a un texto correcto por venir en MAYUSCULAS. Aqui cada letra vale lo que su
+ * familia completa ("e" + "E"). Solo se pliega la mayuscula, no las tildes: si
+ * "é" valiera lo mismo que "e", un descifrado basura lleno de acentos pasaria.
+ *
+ * @param {Float64Array} ref Proporciones esperadas por indice.
+ * @param {import('./alfabeto.js').Alfabeto} alfabeto
+ * @returns {Float64Array}
+ */
+export function referenciaSinMayusculas(ref, alfabeto) {
+  const porFamilia = new Map()
+  alfabeto.simbolos.forEach((simbolo, i) => {
+    const familia = simbolo.toLowerCase()
+    porFamilia.set(familia, (porFamilia.get(familia) ?? 0) + ref[i])
+  })
+  return Float64Array.from(alfabeto.simbolos, (simbolo) => porFamilia.get(simbolo.toLowerCase()))
 }
 
 /**
@@ -195,8 +272,11 @@ function normalizar(valores) {
  * @param {string} criptograma Texto cifrado.
  * @param {import('./alfabeto.js').Alfabeto} alfabeto El alfabeto con el que se cifro.
  * @param {object} [opciones]
- * @param {boolean} [opciones.soloCesarYAtbash=false] Limita el ataque a los dos
- *   cifrados que pide la rubrica, en vez de resolver la familia afin completa.
+ * @param {boolean} [opciones.soloCesarYAtbash=true] Ataca solo los dos cifrados
+ *   que pide la rubrica: Cesar con cualquier k y Atbash (a = -1, b = N - 1).
+ *   Con `false` resuelve la familia afin completa, pero con textos cortos y
+ *   alfabetos grandes eso da falsos positivos: entre decenas de miles de claves
+ *   alguna se parece al español por casualidad.
  * @returns {Resultado}
  *
  * @example
@@ -206,7 +286,7 @@ function normalizar(valores) {
  * resultado.ganador.desplazamiento // 17
  * resultado.ganador.textoClaro     // la frase original
  */
-export function detectar(criptograma, alfabeto, { soloCesarYAtbash = false } = {}) {
+export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}) {
   const { conteos, proporciones: obs, total } = histograma(criptograma, alfabeto)
   const { proporciones: ref, cobertura, icEsperado } = referenciaParaAlfabeto(alfabeto)
 
@@ -265,24 +345,43 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = false } = {
     correlacion(ref, obs, modulo(-1, n), b, n),
   )
 
+  // Cesar son las N claves (1, b). Atbash es UNA sola clave: (-1, N - 1). Antes
+  // se probaba a = -1 con cualquier b, que no es Atbash sino un afin, y con
+  // textos cortos a veces ganaba.
   const claves = []
-  for (const a of multiplicadoresValidos(n, soloCesarYAtbash)) {
-    for (let b = 0; b < n; b += 1) {
-      claves.push({ clave: { a, b }, correlacion: correlacion(ref, obs, a, b, n) })
+  if (soloCesarYAtbash) {
+    for (let b = 0; b < n; b += 1) claves.push({ a: 1, b })
+    claves.push({ a: modulo(-1, n), b: n - 1 })
+  } else {
+    for (const a of multiplicadoresValidos(n)) {
+      for (let b = 0; b < n; b += 1) claves.push({ a, b })
     }
   }
-  claves.sort((x, y) => y.correlacion - x.correlacion)
 
-  // --- Paso 2: verificar los mejores candidatos con bigramas y palabras.
-  const mejores = claves.slice(0, CANDIDATOS_A_VERIFICAR).map(({ clave, correlacion: pico }) => {
+  // El filtro de entrada es la verosimilitud, no la correlacion: la correlacion
+  // es lineal y casi no castiga un simbolo que el español no usa, asi que con
+  // alfabetos de cientos de simbolos la clave correcta podia quedarse fuera de
+  // las que se verificaban.
+  const refPlegada = referenciaSinMayusculas(ref, alfabeto)
+  const aVerificar = claves
+    .map((clave) => ({ clave, simbolos: verosimilitud(conteos, refPlegada, clave, n) }))
+    .sort((x, y) => y.simbolos - x.simbolos)
+    .slice(0, PRESELECCION)
+
+  // --- Paso 2: verificar las preseleccionadas con tres jueces. Bigramas y
+  // palabras se corrigen por legibilidad: sin eso, un descifrado lleno de
+  // simbolos raros quedaba reducido a "so s" y sacaba 100% de palabras.
+  const mejores = aVerificar.map(({ clave, simbolos }) => {
     const textoClaro = aplicarAfin(criptograma, alfabeto, claveInversa(clave, n))
+    const legible = Math.max(legibilidad(textoClaro), 1e-3)
     return {
       clave,
       ...clasificar(clave, n),
-      correlacion: pico,
+      correlacion: correlacion(ref, obs, clave.a, clave.b, n),
       textoClaro,
-      bigramas: puntajeBigramas(textoClaro),
-      palabras: coberturaDePalabras(textoClaro),
+      bigramas: puntajeBigramas(textoClaro) + Math.log10(legible),
+      palabras: coberturaDePalabras(textoClaro) * legible,
+      simbolos,
     }
   })
 
@@ -299,13 +398,18 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = false } = {
 
   const zBigramas = zetas(mejores.map((candidato) => candidato.bigramas))
   const zPalabras = zetas(mejores.map((candidato) => candidato.palabras))
+  const zSimbolos = zetas(mejores.map((candidato) => candidato.simbolos))
 
   const candidatos = mejores
     .map((candidato, indice) => ({
       ...candidato,
-      puntaje: PESOS.bigramas * zBigramas[indice] + PESOS.palabras * zPalabras[indice],
+      puntaje:
+        PESOS.bigramas * zBigramas[indice] +
+        PESOS.palabras * zPalabras[indice] +
+        PESOS.simbolos * zSimbolos[indice],
     }))
     .sort((x, y) => y.puntaje - x.puntaje)
+    .slice(0, CANDIDATOS_A_VERIFICAR)
 
   const probs = probabilidades(candidatos.map((candidato) => candidato.puntaje))
   const ganador = candidatos[0]
