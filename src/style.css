@@ -299,6 +299,18 @@ body::before {
   font-weight: 700;
 }
 
+/* Aviso que pide una decision, no un error: dorado, con su boton al lado. */
+.estado--aviso {
+  color: var(--oro);
+  margin-top: 8px;
+}
+
+.boton--chico {
+  padding: 6px 12px;
+  margin-top: 6px;
+  font-size: 0.7rem;
+}
+
 /* ---------------------------------------------------------------- resultados */
 
 .salida {
