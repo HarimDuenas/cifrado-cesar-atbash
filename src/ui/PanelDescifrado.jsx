@@ -78,10 +78,12 @@ export function PanelDescifrado({
   observado,
 }) {
   const ganador = resultado?.ganador ?? null
-  const desplazamientoFinal = ganador
-    ? ganador.desplazamiento ?? (alfabeto ? alfabeto.n - 1 : 0)
-    : null
-  const desplazamiento = useDeslizamiento(desplazamientoFinal)
+  // Solo Cesar se anima deslizandose; Atbash no se corre sino que se voltea,
+  // asi que se dibuja directo con su clave (a = -1, b = N - 1).
+  const esCesar = ganador?.familia === 'cesar'
+  const deslizado = useDeslizamiento(esCesar ? ganador.desplazamiento : null)
+  const desplazamiento = esCesar ? deslizado : (ganador?.clave.b ?? 0)
+  const multiplicador = esCesar ? 1 : (ganador?.clave.a ?? 1)
 
   /*
    * Cuando llega un resultado NUEVO, el bloque se enciende una sola vez y la
@@ -179,6 +181,7 @@ export function PanelDescifrado({
             observado={observado}
             simbolos={alfabeto?.simbolos ?? []}
             desplazamiento={desplazamiento}
+            multiplicador={multiplicador}
           />
 
           <details className="detalle">

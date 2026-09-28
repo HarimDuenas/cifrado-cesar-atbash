@@ -31,7 +31,9 @@ function etiquetaDe(simbolo) {
  * @param {number[]} props.referencia Proporcion esperada por indice del alfabeto.
  * @param {number[]} props.observado Proporcion medida en el criptograma.
  * @param {string[]} props.simbolos Los simbolos del alfabeto, en orden.
- * @param {number} [props.desplazamiento=0] Cuantos lugares se corre el criptograma.
+ * @param {number} [props.desplazamiento=0] El `b` de la clave afin: cuantos lugares se corre.
+ * @param {number} [props.multiplicador=1] El `a` de la clave afin: 1 en Cesar, N - 1 (o sea
+ *   -1) en Atbash, que refleja el alfabeto.
  * @param {number} [props.alto=100] Alto del area de dibujo, en unidades del viewBox.
  * @param {string} [props.titulo] Texto alternativo; si no se da, se arma solo.
  */
@@ -40,19 +42,28 @@ export function Histograma({
   observado,
   simbolos,
   desplazamiento = 0,
+  multiplicador = 1,
   alto = 100,
   titulo,
 }) {
   const n = simbolos.length
   if (n === 0) return null
 
-  // El criptograma se dibuja corrido: la barra del indice i muestra lo que se
-  // observo en (i + desplazamiento). Asi, con la clave correcta, cada barra
-  // queda sobre la parte de la silueta que le corresponde.
+  // La barra del indice i muestra lo que se observo en (a·i + b) mod N: la
+  // misma formula con la que se cifro. Asi, con la clave correcta, cada barra
+  // queda sobre la parte de la silueta que le corresponde. Con Cesar (a = 1)
+  // es correr el criptograma b lugares; con Atbash (a = -1, b = N - 1) es
+  // voltearlo. Antes solo se corria, y con Atbash las barras quedaban lejos.
+  const reflejado = ((multiplicador % n) + n) % n !== 1
   const corrido = Array.from(
     { length: n },
-    (_, i) => observado[(i + desplazamiento) % n] ?? 0,
+    (_, i) => observado[(((multiplicador * i + desplazamiento) % n) + n) % n] ?? 0,
   )
+  const descripcion = reflejado
+    ? 'reflejado'
+    : desplazamiento > 0
+      ? `corrido ${desplazamiento} lugares`
+      : 'sin correr'
 
   const maximo = Math.max(...referencia, ...corrido, 1e-9)
   const base = alto - 10 // deja aire abajo para la linea base
@@ -73,8 +84,8 @@ export function Histograma({
   const masFrecuente = corrido.indexOf(Math.max(...corrido))
   const alternativo =
     titulo ??
-    `Comparacion de frecuencias: el simbolo mas frecuente del criptograma corrido ` +
-      `${desplazamiento} lugares es "${etiquetaDe(simbolos[masFrecuente] ?? '')}".`
+    `Comparacion de frecuencias: el simbolo mas frecuente del criptograma ${descripcion} ` +
+      `es "${etiquetaDe(simbolos[masFrecuente] ?? '')}".`
 
   return (
     <figure className="histograma">
@@ -107,7 +118,7 @@ export function Histograma({
           Frecuencia del español
         </span>
         <span className="histograma__clave histograma__clave--observado">
-          Criptograma {desplazamiento > 0 ? `corrido ${desplazamiento} lugares` : 'sin correr'}
+          Criptograma {descripcion}
         </span>
       </figcaption>
     </figure>
