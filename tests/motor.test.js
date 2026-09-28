@@ -92,13 +92,13 @@ describe('alfabeto', () => {
   })
 
   it('limpiarAlfabeto quita los invisibles y dice cuales', () => {
-    const r = limpiarAlfabeto('A✔️B​C﻿')
+    const r = limpiarAlfabeto('A✔\uFE0FB\u200BC\uFEFF')
     expect(r.simbolos).toBe('A✔BC')
     expect(r.invisibles).toEqual(['U+FE0F', 'U+200B', 'U+FEFF'])
   })
 
   it('limpiarAlfabeto cambia el espacio de Word por uno normal', () => {
-    const r = limpiarAlfabeto('A B')
+    const r = limpiarAlfabeto('A\u00A0B')
     expect(r.simbolos).toBe('A B')
     expect(r.espaciosDuros).toBe(1)
   })
@@ -111,7 +111,7 @@ describe('alfabeto', () => {
 
   it('un alfabeto pegado con basura invisible queda igual que el limpio', () => {
     const limpio = crearAlfabeto('ABCDEFGHIJ✔KLMNÑOPQRSTUVWXYZ')
-    const sucio = 'ABCDEFGHIJ✔️KLMN\r\nÑOPQRSTUVWXYZ\r\n'
+    const sucio = 'ABCDEFGHIJ✔\uFE0FKLMN\r\nÑOPQRSTUVWXYZ\r\n'
     expect(crearAlfabeto(limpiarAlfabeto(sucio).simbolos).toString()).toBe(limpio.toString())
   })
 

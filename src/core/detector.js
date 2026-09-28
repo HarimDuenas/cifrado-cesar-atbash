@@ -1,26 +1,7 @@
 /**
- * @file El ataque: descifra sin que nadie elija nada.
- *
- * La diferencia con el descifrado tipico esta aqui. Lo comun es probar las N
- * claves posibles, calificar los N resultados y mostrarle al usuario una lista
- * para que escoja. Este detector **calcula** la clave y entrega una sola linea.
- *
- * Los cuatro pasos:
- *
- *   0. ¿Es atacable?  Indice de coincidencia contra el del español.
- *   1. ¿Que clave?    Correlacion cruzada del histograma contra la referencia.
- *   2. ¿Es correcta?  Verificacion con bigramas y palabras del español.
- *   3. Resultado      Tipo, modulo, texto claro y confianza.
- *
- * El paso 1 es el metodo de al-Kindī escrito en algebra. El dijo: cuenta las
- * letras de un texto normal, cuenta las del criptograma y emparejalas. La
- * correlacion cruzada es exactamente esa comparacion, resuelta de una vez en
- * lugar de a ojo:
- *
- *     R(a, b) = Σᵢ ref[i] · obs[(a·i + b) mod N]
- *
- * El par (a, b) que da el pico mas alto es la clave que mejor superpone las dos
- * distribuciones.
+ * @file Detector: calcula la clave y entrega una sola linea.
+ * Paso 0, ¿es atacable? · paso 1, preseleccion · paso 2, verificacion · paso 3, resultado.
+ * La correlacion R(a, b) = Σᵢ ref[i] · obs[(a·i + b) mod N] es el metodo de al-Kindī.
  */
 
 import { modulo } from './alfabeto.js'
@@ -34,127 +15,71 @@ import {
 } from './frecuencias.js'
 import { legibilidad } from './texto.js'
 
-/** [DT-01] Menos simbolos que esto y la estadistica no tiene de donde agarrarse. */
+/** [DT-01] */
 export const MINIMO_SIMBOLOS = 12
 
-/**
- * [DT-02] Que tan arriba del azar tiene que estar el IC para dar por bueno que el
- * texto es monoalfabetico. 0 seria "cualquier cosa pasa" y 1 "solo si el IC es
- * identico al del español". 0.35 deja pasar textos cortos, donde el IC medido
- * baja por falta de muestra, y sigue rechazando texto aleatorio.
- */
+/** [DT-02] */
 export const UMBRAL_IC = 0.35
 
-/**
- * [DT-03] Cuantos candidatos, ya verificados, se muestran como evidencia y entran
- * al calculo de la confianza.
- */
+/** [DT-03] */
 export const CANDIDATOS_A_VERIFICAR = 8
 
-/**
- * [DT-04] Peso de cada juez al sumarlos: puntaje = simbolos + bigramas + 0.5 · palabras.
- *
- * Se suman en crudo porque `simbolos` y `bigramas` ya son logaritmos de
- * probabilidad (por simbolo y por par), o sea la misma escala; `palabras` es
- * una proporcion y entra como un bono de hasta 0.5.
- *
- * Antes se normalizaban con puntajes z, y eso fallaba con textos cortos: en
- * casi todos los candidatos las palabras valen 0, asi que una basura que por
- * casualidad formaba "va" o "ha" se disparaba a un z enorme y aplastaba a los
- * otros dos jueces. Medido sobre 5 774 casos de 12 a 30 simbolos: los z daban
- * 99 respuestas equivocadas; la suma directa, ninguna.
- *
- * `simbolos` es el juez que mira TODO lo descifrado, no solo las letras: sin el,
- * con alfabetos de cientos de simbolos una clave equivocada convertia casi todo
- * en simbolos raros, esos simbolos se borraban antes de calificar y lo poco que
- * quedaba ("e e a de dad") parecia español. Asi fallo el examen.
- */
+/** [DT-04] puntaje = simbolos + bigramas + 0.5 · palabras */
 export const PESOS = Object.freeze({ simbolos: 1, bigramas: 1, palabras: 0.5 })
 
-/**
- * [DT-14] Ventaja minima del primer candidato sobre el segundo para entregar la
- * linea. Por debajo, dos claves explican el texto casi igual de bien y el
- * sistema se abstiene en vez de apostar.
- *
- * Solo pesa con textos muy cortos: medido sobre 19 094 textos de 12 a 16
- * simbolos, 14 de los 16 errores ganaban por menos de esto, y abstenerse
- * los evita a cambio de unos 30 aciertos (0.15%) que se vuelven "no alcanza".
- * Con textos de 20 simbolos o mas, la ventaja real es de 1 a 2 puntos.
- */
+/** [DT-14] */
 export const MARGEN_MINIMO = 0.25
 
-/** Puntaje de bigramas cuando no hay ni un par de letras que calificar. */
+// Bigramas de un texto sin pares de letras.
 const SIN_BIGRAMAS = -6
 
-/**
- * Cuanto castiga a los bigramas cada simbolo ilegible: se suma
- * `CASTIGO_ILEGIBLE · log10(legibilidad)`. Con 1 se quedaba corto: "CÉ↡CÉ véSÉ
- * r⊈;" (2 simbolos raros de 14) reducido a "ce ce ve se" le ganaba por 0.03 a
- * "SALSA ROCA 321". Con 3, medido sobre 16 400 casos, bajan los errores con
- * textos de 12 a 16 simbolos sin tocar ninguno de los demas.
- */
+// Se suma CASTIGO_ILEGIBLE · log10(legibilidad) a los bigramas.
 const CASTIGO_ILEGIBLE = 3
 
-/**
- * [DT-05] Si la cobertura del alfabeto en el corpus es menor a esto, no hay tabla de
- * referencia util (por ejemplo, un alfabeto de puros emojis).
- */
+/** [DT-05] */
 export const MINIMA_COBERTURA = 0.2
 
-/**
- * [DT-11] Cuantas claves, las mas verosimiles simbolo por simbolo, pasan a la
- * verificacion con bigramas y palabras.
- *
- * El filtro va primero a proposito: los jueces de bigramas y palabras borran
- * todo lo que no es letra antes de calificar, asi que un descifrado basura como
- * "VA#?A/A#>" les parece "va a a" y saca 100% de palabras. La verosimilitud si
- * cuenta esos simbolos, y los deja fuera antes de que lleguen a los otros jueces.
- */
+/** [DT-11] */
 export const PRESELECCION = 32
 
-/**
- * Probabilidad minima que se le asigna a un simbolo que el español no usa, para
- * que su logaritmo sea un castigo fuerte y no -Infinity.
- */
+// Frecuencia minima de un simbolo que el español no usa.
 const PISO_SIMBOLO = 1e-5
 
 /**
  * @typedef {object} Candidato
- * @property {import('./afin.js').ClaveAfin} clave Clave de cifrado supuesta.
+ * @property {import('./afin.js').ClaveAfin} clave
  * @property {string} familia 'cesar', 'atbash' o 'afin'.
- * @property {number | null} desplazamiento El modulo de Cesar, si aplica.
- * @property {number} correlacion Pico de correlacion, normalizado.
- * @property {string} textoClaro El texto descifrado con esa clave.
- * @property {number} bigramas Log-probabilidad promedio de sus pares de letras.
- * @property {number} palabras Proporcion de letras en palabras reconocidas.
- * @property {number} simbolos Log-probabilidad promedio de cada simbolo descifrado.
- * @property {number} puntaje Combinacion de los tres jueces.
+ * @property {number | null} desplazamiento Solo en Cesar.
+ * @property {number} correlacion
+ * @property {string} textoClaro
+ * @property {number} bigramas
+ * @property {number} palabras
+ * @property {number} simbolos
+ * @property {number} puntaje
  */
 
 /**
  * @typedef {object} Resultado
- * @property {boolean} atacable Si el paso 0 dio permiso de atacar.
- * @property {string} diagnostico Una linea explicando el resultado, para la interfaz.
- * @property {number} ic IC medido del criptograma.
- * @property {number} icEsperado IC del español en este alfabeto.
- * @property {number} icAleatorio IC de un texto al azar (1/N).
- * @property {number} simbolos Cuantos simbolos del texto pertenecen al alfabeto.
- * @property {Candidato | null} ganador El resultado unico, o null si no hay.
- * @property {number} confianza Probabilidad relativa del ganador, entre 0 y 1.
- * @property {Candidato[]} candidatos Los candidatos verificados, mejor primero (evidencia).
- * @property {number[]} curvaCesar R(b) para a = 1, normalizada a [0, 1]: la grafica del ataque.
- * @property {number[]} curvaReflexion R(b) para a = -1, normalizada a [0, 1].
+ * @property {boolean} atacable
+ * @property {string} diagnostico
+ * @property {number} ic
+ * @property {number} icEsperado
+ * @property {number} icAleatorio 1/N
+ * @property {number} simbolos Simbolos del texto que estan en el alfabeto.
+ * @property {Candidato | null} ganador
+ * @property {number} confianza Entre 0 y 1.
+ * @property {Candidato[]} candidatos Mejor primero.
+ * @property {number[]} curvaCesar R(b) con a = 1, en [0, 1].
+ * @property {number[]} curvaReflexion R(b) con a = -1, en [0, 1].
  */
 
 /**
- * [DT-06] Correlacion cruzada entre la referencia y el histograma observado para una
- * clave afin (a, b).
- *
- * @param {Float64Array} ref Proporciones esperadas por indice.
- * @param {Float64Array} obs Proporciones observadas por indice.
- * @param {number} a Multiplicador.
- * @param {number} b Desplazamiento.
- * @param {number} n Tamaño del alfabeto.
+ * [DT-06]
+ * @param {Float64Array} ref
+ * @param {Float64Array} obs
+ * @param {number} a
+ * @param {number} b
+ * @param {number} n
  * @returns {number}
  */
 export function correlacion(ref, obs, a, b, n) {
@@ -166,18 +91,12 @@ export function correlacion(ref, obs, a, b, n) {
 }
 
 /**
- * [DT-12] Que tan español es, simbolo por simbolo, lo que produce una clave.
- *
- * Promedio de log10 de la frecuencia esperada de cada simbolo descifrado,
- * contando TODOS los simbolos del alfabeto que trae el criptograma. Un simbolo
- * que el español no usa cuesta -5; una letra comun, cerca de -1. Es el juez
- * que no se deja engañar por un descifrado lleno de simbolos raros.
- *
- * @param {ArrayLike<number>} conteos Cuantas veces aparece cada indice en el criptograma.
- * @param {Float64Array} ref Proporciones esperadas por indice.
- * @param {import('./afin.js').ClaveAfin} clave Clave de cifrado supuesta.
- * @param {number} n Tamaño del alfabeto.
- * @returns {number} Log-probabilidad promedio por simbolo (mas alto es mejor).
+ * [DT-12]
+ * @param {ArrayLike<number>} conteos Por indice, en el criptograma.
+ * @param {Float64Array} ref
+ * @param {import('./afin.js').ClaveAfin} clave
+ * @param {number} n
+ * @returns {number} Log-probabilidad promedio por simbolo.
  */
 export function verosimilitud(conteos, ref, clave, n) {
   const { a, b } = claveInversa(clave, n)
@@ -192,15 +111,8 @@ export function verosimilitud(conteos, ref, clave, n) {
 }
 
 /**
- * [DT-13] La referencia con mayusculas y minusculas sumadas.
- *
- * En el corpus casi todo va en minuscula, asi que en un alfabeto que tiene las
- * dos, la "E" pesa mucho menos que la "e". Para el juez de simbolos eso castiga
- * a un texto correcto por venir en MAYUSCULAS. Aqui cada letra vale lo que su
- * familia completa ("e" + "E"). Solo se pliega la mayuscula, no las tildes: si
- * "é" valiera lo mismo que "e", un descifrado basura lleno de acentos pasaria.
- *
- * @param {Float64Array} ref Proporciones esperadas por indice.
+ * [DT-13]
+ * @param {Float64Array} ref
  * @param {import('./alfabeto.js').Alfabeto} alfabeto
  * @returns {Float64Array}
  */
@@ -214,14 +126,9 @@ export function referenciaSinMayusculas(ref, alfabeto) {
 }
 
 /**
- * [DT-07] Todos los multiplicadores validos para un alfabeto de n simbolos.
- *
- * Cesar usa a = 1 y Atbash a = n - 1 (que es -1). Los demas valores invertibles
- * son los otros cifrados afines: se incluyen para que el sistema resuelva la
- * familia completa y no solo los dos casos que pide la rubrica.
- *
+ * [DT-07]
  * @param {number} n
- * @param {boolean} [soloCesarYAtbash=false] Limita la busqueda a los dos casos de la rubrica.
+ * @param {boolean} [soloCesarYAtbash=false]
  * @returns {number[]}
  */
 export function multiplicadoresValidos(n, soloCesarYAtbash = false) {
@@ -234,10 +141,9 @@ export function multiplicadoresValidos(n, soloCesarYAtbash = false) {
 }
 
 /**
- * [DT-08] Clasifica una clave dentro de la familia afin.
- *
+ * [DT-08]
  * @param {import('./afin.js').ClaveAfin} clave
- * @param {number} n Tamaño del alfabeto.
+ * @param {number} n
  * @returns {{familia: string, desplazamiento: number | null, etiqueta: string}}
  */
 export function clasificar({ a, b }, n) {
@@ -264,20 +170,15 @@ export function clasificar({ a, b }, n) {
 }
 
 /**
- * [DT-09] Convierte una lista de puntajes en probabilidades relativas (softmax con la
- * escala tomada de los propios datos).
- *
- * La confianza no es un numero inventado: es que tanto se despega el mejor
- * candidato de los demas, medido en desviaciones estandar. Si dos candidatos
- * empatan, la confianza baja sola.
- *
+ * [DT-09]
  * @param {number[]} puntajes
- * @returns {number[]} Probabilidades que suman 1.
+ * @returns {number[]} Suman 1.
  */
 export function probabilidades(puntajes) {
   if (puntajes.length === 0) return []
   if (puntajes.length === 1) return [1]
 
+  // Softmax con la desviacion estandar de los propios puntajes como escala.
   const media = puntajes.reduce((suma, p) => suma + p, 0) / puntajes.length
   const varianza = puntajes.reduce((suma, p) => suma + (p - media) ** 2, 0) / puntajes.length
   const escala = Math.max(Math.sqrt(varianza), 1e-9)
@@ -287,12 +188,7 @@ export function probabilidades(puntajes) {
   return exponenciales.map((e) => e / total)
 }
 
-/**
- * Normaliza una lista de valores a [0, 1] para poder graficarla.
- *
- * @param {number[]} valores
- * @returns {number[]}
- */
+// Lleva una lista a [0, 1] para graficarla.
 function normalizar(valores) {
   const minimo = Math.min(...valores)
   const maximo = Math.max(...valores)
@@ -301,24 +197,14 @@ function normalizar(valores) {
 }
 
 /**
- * [DT-10] Descifra un criptograma sin intervencion humana.
- *
- * @param {string} criptograma Texto cifrado.
- * @param {import('./alfabeto.js').Alfabeto} alfabeto El alfabeto con el que se cifro.
+ * [DT-10]
+ * @param {string} criptograma
+ * @param {import('./alfabeto.js').Alfabeto} alfabeto
  * @param {object} [opciones]
- * @param {boolean} [opciones.soloCesarYAtbash=true] Ataca solo los dos cifrados
- *   que pide la rubrica: Cesar con cualquier k y Atbash (a = -1, b = N - 1).
- *   Con `false` resuelve la familia afin completa, pero con textos cortos y
- *   alfabetos grandes eso da falsos positivos: entre decenas de miles de claves
- *   alguna se parece al español por casualidad.
+ * @param {boolean} [opciones.soloCesarYAtbash=true] Con false, prueba la familia afin completa.
  * @returns {Resultado}
- *
  * @example
- * const alfabeto = crearAlfabeto(ASCII_IMPRIMIBLE)
- * const resultado = detectar(cifrarCesar(frase, alfabeto, 17), alfabeto)
- * resultado.ganador.familia        // 'cesar'
- * resultado.ganador.desplazamiento // 17
- * resultado.ganador.textoClaro     // la frase original
+ * detectar(cifrarCesar(frase, alfabeto, 17), alfabeto).ganador.desplazamiento  // 17
  */
 export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}) {
   const { conteos, proporciones: obs, total } = histograma(criptograma, alfabeto)
@@ -339,7 +225,7 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
     curvaReflexion: [],
   }
 
-  // --- Paso 0: ¿vale la pena atacar?
+  // Paso 0
   if (total < MINIMO_SIMBOLOS) {
     return {
       ...base,
@@ -372,16 +258,14 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
     }
   }
 
-  // --- Paso 1: calcular la clave por correlacion cruzada.
+  // Paso 1
   const n = alfabeto.n
   const curvaCesar = Array.from({ length: n }, (_, b) => correlacion(ref, obs, 1, b, n))
   const curvaReflexion = Array.from({ length: n }, (_, b) =>
     correlacion(ref, obs, modulo(-1, n), b, n),
   )
 
-  // Cesar son las N claves (1, b). Atbash es UNA sola clave: (-1, N - 1). Antes
-  // se probaba a = -1 con cualquier b, que no es Atbash sino un afin, y con
-  // textos cortos a veces ganaba.
+  // Cesar: las N claves (1, b). Atbash: solo (-1, N - 1).
   const claves = []
   if (soloCesarYAtbash) {
     for (let b = 0; b < n; b += 1) claves.push({ a: 1, b })
@@ -392,19 +276,13 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
     }
   }
 
-  // El filtro de entrada es la verosimilitud, no la correlacion: la correlacion
-  // es lineal y casi no castiga un simbolo que el español no usa, asi que con
-  // alfabetos de cientos de simbolos la clave correcta podia quedarse fuera de
-  // las que se verificaban.
   const refPlegada = referenciaSinMayusculas(ref, alfabeto)
   const aVerificar = claves
     .map((clave) => ({ clave, simbolos: verosimilitud(conteos, refPlegada, clave, n) }))
     .sort((x, y) => y.simbolos - x.simbolos)
     .slice(0, PRESELECCION)
 
-  // --- Paso 2: verificar las preseleccionadas con tres jueces. Bigramas y
-  // palabras se corrigen por legibilidad: sin eso, un descifrado lleno de
-  // simbolos raros quedaba reducido a "so s" y sacaba 100% de palabras.
+  // Paso 2: bigramas y palabras se corrigen por legibilidad.
   const mejores = aVerificar.map(({ clave, simbolos }) => {
     const textoClaro = aplicarAfin(criptograma, alfabeto, claveInversa(clave, n))
     const legible = Math.max(legibilidad(textoClaro), 1e-3)
@@ -419,7 +297,6 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
     }
   })
 
-  // Suma directa de los tres jueces: ver [DT-04] para el por que.
   const candidatos = mejores
     .map((candidato) => ({
       ...candidato,
@@ -435,8 +312,7 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
   const probs = probabilidades(candidatos.map((candidato) => candidato.puntaje))
   const ganador = candidatos[0]
 
-  // Empate: con tan poca muestra, dos claves explican el texto casi igual. Se
-  // dice, en vez de entregar una linea que puede estar mal. Ver [DT-14].
+  // Empate: se abstiene en vez de apostar.
   const ventaja = candidatos.length > 1 ? ganador.puntaje - candidatos[1].puntaje : Infinity
   if (ventaja < MARGEN_MINIMO) {
     return {
@@ -450,7 +326,7 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
     }
   }
 
-  // --- Paso 3: una sola linea.
+  // Paso 3
   return {
     ...base,
     atacable: true,

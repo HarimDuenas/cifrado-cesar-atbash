@@ -1,40 +1,27 @@
 /**
- * @file Reduccion de texto para las estadisticas del idioma.
- *
- * Los bigramas y la lista de palabras se cuentan sobre una version simplificada
- * del español: minusculas, sin tildes (pero con Ñ), y con todo lo que no sea
- * letra convertido en espacio. Asi la tabla es chica y la verificacion funciona
- * igual aunque el texto venga con puntuacion o mayusculas raras.
- *
- * Ojo: `scripts/generar-tablas.mjs` repite esta misma logica en vez de importar
- * este archivo, porque el script corre ANTES de que existan los JSON de datos y
- * necesita poder correr sin ellos. Si se cambia una, hay que cambiar la otra.
+ * @file Reduccion del texto para medir el idioma: minusculas, sin tildes, con Ñ.
+ * `scripts/generar-tablas.mjs` repite esta logica: si cambia una, cambia la otra.
  */
 
-/** [TX-01] Letras del español en minusculas, mas el espacio. */
+/** [TX-01] */
 export const LETRAS_Y_ESPACIO = 'abcdefghijklmnñopqrstuvwxyz '
 
 const PERMITIDAS = new Set(Array.from(LETRAS_Y_ESPACIO))
 
 /**
- * [TX-02] Quita tildes y dieresis pero conserva la Ñ.
- *
- * Descompone (NFD) y borra solo el acento agudo (U+0301) y la dieresis
- * (U+0308). La virgulilla de la Ñ es U+0303 y se deja: borrar todas las marcas
- * convertiria "ñ" en "n" y el español perderia una letra que sí cuenta.
- *
+ * [TX-02]
  * @param {string} texto
  * @returns {string}
  */
 export function quitarTildes(texto) {
-  return texto.normalize('NFD').replace(/[́̈]/g, '').normalize('NFC')
+  // Solo acento agudo y dieresis; la tilde de la Ñ (U+0303) se queda.
+  return texto.normalize('NFD').replace(/[\u0301\u0308]/g, '').normalize('NFC')
 }
 
 /**
- * [TX-03] Deja el texto en minusculas, sin tildes y con solo letras y espacios simples.
- *
+ * [TX-03]
  * @param {string} texto
- * @returns {string} Texto reducido, sin espacios repetidos ni al inicio o final.
+ * @returns {string}
  */
 export function reducir(texto) {
   return Array.from(quitarTildes(String(texto).toLowerCase()))
@@ -45,10 +32,9 @@ export function reducir(texto) {
 }
 
 /**
- * [TX-04] Pares de caracteres consecutivos del texto reducido.
- *
+ * [TX-04]
  * @param {string} texto
- * @returns {string[]} Lista de bigramas; vacia si el texto reducido es muy corto.
+ * @returns {string[]}
  */
 export function bigramasDe(texto) {
   const reducido = reducir(texto)
@@ -59,21 +45,12 @@ export function bigramasDe(texto) {
   return pares
 }
 
-/** Lo que puede aparecer en un texto en español ademas de letras y espacios. */
 const PUNTUACION_ESPAÑOLA = new Set(Array.from('0123456789.,;:¿?¡!"\'()-«»'))
 
 /**
- * [TX-06] Que proporcion del texto se puede leer como español.
- *
- * `reducir` convierte en espacio todo lo que no es letra, y eso esta bien para
- * contar bigramas, pero esconde un problema: con un alfabeto de cientos de
- * simbolos, un descifrado equivocado sale lleno de simbolos raros, `reducir`
- * los borra y lo poco que queda ("so", "de") parece español. Esta medida si
- * los cuenta: letras (con o sin tilde, con Ñ), digitos, espacios y puntuacion
- * cuentan como legibles; "⓪", "☿" o "Ж" no.
- *
+ * [TX-06]
  * @param {string} texto
- * @returns {number} Entre 0 y 1. Un texto vacio da 0.
+ * @returns {number} Entre 0 y 1; un texto vacio da 0.
  */
 export function legibilidad(texto) {
   const caracteres = Array.from(String(texto))
@@ -89,10 +66,9 @@ export function legibilidad(texto) {
 }
 
 /**
- * [TX-05] Palabras del texto reducido, de 2 a 20 caracteres.
- *
+ * [TX-05]
  * @param {string} texto
- * @returns {string[]}
+ * @returns {string[]} Palabras de 2 a 20 caracteres.
  */
 export function palabrasDe(texto) {
   return reducir(texto)

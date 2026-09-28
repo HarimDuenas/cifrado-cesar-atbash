@@ -1,35 +1,12 @@
-/**
- * @file Panel de descifrado: una sola linea, sin que el usuario elija nada.
- *
- * Este panel es el punto mas pesado de la rubrica. Recibe un criptograma y
- * muestra el tipo de cifrado, el modulo y el texto claro, todo calculado. La
- * lista de candidatos existe, pero vive dentro de un bloque cerrado rotulado
- * "Evidencia del analisis": es prueba de como se llego al resultado, no un
- * menu de opciones.
- */
+ /**
+  * @file Panel de descifrado: una sola linea; los candidatos quedan como evidencia.
+  */
 
 import { useEffect, useState } from 'react'
 
 import { CurvaCorrelacion, Histograma } from './Histograma.jsx'
 
-/**
- * Anima el desplazamiento del histograma de 0 hasta el valor detectado, para
- * que se vea como las dos distribuciones se van montando hasta encajar.
- *
- * Respeta `prefers-reduced-motion`: si el usuario pidio menos movimiento, salta
- * directo al valor final sin animar nada.
- *
- * El paso se guarda junto con el objetivo al que pertenece, y el valor de
- * arranque se **deriva durante el render**. Asi el efecto no necesita llamar a
- * `setState` de forma sincronica para reiniciar la animacion cuando llega una
- * deteccion nueva: eso dispara un render en cascada y lo marca la regla
- * `react(set-state-in-effect)` del linter. El unico `setState` que queda vive
- * dentro del temporizador, o sea fuera del render, que es justo para lo que
- * existe `useEffect`.
- *
- * @param {number | null} objetivo Desplazamiento final.
- * @returns {number} El desplazamiento que toca dibujar en este momento.
- */
+ // Desliza el histograma de 0 a la k detectada. Respeta "reducir movimiento".
 function useDeslizamiento(objetivo) {
   const [avance, setAvance] = useState({ objetivo: null, paso: 0 })
 
@@ -42,7 +19,7 @@ function useDeslizamiento(objetivo) {
       return undefined
     }
 
-    // Un recorrido completo dura ~700 ms, sin importar cuanto valga la clave.
+    // ~700 ms en total, sin importar la k.
     const intervalo = Math.max(Math.floor(700 / objetivo), 16)
     let paso = 0
 
@@ -60,15 +37,15 @@ function useDeslizamiento(objetivo) {
   return avance.objetivo === objetivo ? avance.paso : 0
 }
 
-/**
- * @param {object} props
- * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto
- * @param {string} props.criptograma
- * @param {(valor: string) => void} props.onCriptograma
- * @param {import('../core/detector.js').Resultado | null} props.resultado
- * @param {number[]} props.referencia Proporciones esperadas del español.
- * @param {number[]} props.observado Proporciones medidas en el criptograma.
- */
+ /**
+  * @param {object} props
+  * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto
+  * @param {string} props.criptograma
+  * @param {(valor: string) => void} props.onCriptograma
+  * @param {import('../core/detector.js').Resultado | null} props.resultado
+  * @param {number[]} props.referencia
+  * @param {number[]} props.observado
+  */
 export function PanelDescifrado({
   alfabeto,
   criptograma,
@@ -78,21 +55,13 @@ export function PanelDescifrado({
   observado,
 }) {
   const ganador = resultado?.ganador ?? null
-  // Solo Cesar se anima deslizandose; Atbash no se corre sino que se voltea,
-  // asi que se dibuja directo con su clave (a = -1, b = N - 1).
+  // Cesar se desliza; Atbash se dibuja ya reflejado.
   const esCesar = ganador?.familia === 'cesar'
   const deslizado = useDeslizamiento(esCesar ? ganador.desplazamiento : null)
   const desplazamiento = esCesar ? deslizado : (ganador?.clave.b ?? 0)
   const multiplicador = esCesar ? 1 : (ganador?.clave.a ?? 1)
 
-  /*
-   * Cuando llega un resultado NUEVO, el bloque se enciende una sola vez y la
-   * franja dorada lo recorre. Sin esto, el barrido solo aparecia al tocarlo con
-   * el puntero, que no es lo mismo: la idea es anunciar el hallazgo.
-   *
-   * La firma incluye la clave y el largo del texto, para que dos descifrados
-   * distintos se anuncien y uno repetido no.
-   */
+   // Enciende el bloque una vez por cada resultado nuevo.
   const firma = ganador
     ? `${ganador.clave.a}:${ganador.clave.b}:${ganador.textoClaro.length}`
     : null
@@ -103,7 +72,7 @@ export function PanelDescifrado({
     if (!bloque) return undefined
 
     bloque.classList.remove('encendido')
-    // Reiniciar la animacion: sin esto, dos resultados seguidos no la repiten.
+    // Reinicia la animacion.
     void bloque.offsetWidth
     bloque.classList.add('encendido')
 
@@ -149,10 +118,7 @@ export function PanelDescifrado({
             índice de coincidencia {resultado.ic.toFixed(4)} contra {resultado.icEsperado.toFixed(4)}{' '}
             del español ({resultado.icAleatorio.toFixed(4)} sería texto al azar)
           </p>
-          {/* El detector solo puede dar la k dentro de [0, N): con N = 95, cifrar
-              con 15 y con 300 produce el MISMO criptograma, asi que no hay forma
-              de distinguirlas. Se dice aqui para que "cifre con 300 y me dice 15"
-              no parezca un error. */}
+          {/* k y k + N·m dan el mismo criptograma. */}
           {ganador.desplazamiento !== null && alfabeto ? (
             <p className="resultado__meta">
               Cualquier k que deje residuo {ganador.desplazamiento} al dividir entre {alfabeto.n}{' '}

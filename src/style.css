@@ -1,33 +1,9 @@
-/*
- * Estilos de la aplicacion: direccion visual "geometria de al-Kindi".
- *
- * Por que este aspecto y no el de una app cualquiera: el programa usa el metodo
- * que al-Kindi describio en Bagdad en el siglo IX, asi que el diseño cita su
- * origen en lugar de inventar una estetica neutra. De ahi las tres decisiones
- * que lo definen:
- *
- *   1. Pergamino, indigo y oro, con tinta calida. Nada de gris azulado.
- *   2. Sin tarjetas ni sombras: filetes finos con una estrella de ocho puntas
- *      cortando la linea, como una monografia impresa.
- *   3. Un enrejado geometrico de ocho puntas como fondo, muy tenue, dibujado
- *      con un SVG embebido para no pedir nada por red. El programa no habla con
- *      ningun servidor, y la hoja de estilos tampoco.
- *
- * Sin librerias de CSS y sin fuentes web: serif del sistema para la prosa,
- * monoespaciado para los simbolos. Todos los colores viven arriba como
- * variables; la paleta oscura solo las redefine.
- */
+ /*
+  * Geometria de al-Kindi: pergamino, indigo y oro, filetes finos y una roseta
+  * de ocho puntas. Sin librerias ni fuentes web; los colores son variables.
+  */
 
-/*
- * Una sola paleta, oscura para todos: no se sigue el tema del sistema.
- * Es la version nocturna de la misma direccion: indigo profundo, tinta calida
- * color pergamino y oro.
- *
- * Los nombres de las variables siguen diciendo "pergamino" y "tinta" a
- * proposito: describen el papel que cumplen (fondo de pagina y superficie
- * elevada, texto principal y secundario), no el color literal. Renombrarlos
- * tocaria cuarenta selectores sin ganar nada.
- */
+ /* Paleta oscura. "pergamino" y "tinta" nombran el papel que cumplen, no el color. */
 :root {
   color-scheme: dark; /* controles, barras y el deslizador se dibujan oscuros */
 
@@ -57,8 +33,7 @@ body {
   font-family: var(--serif);
   font-size: 1rem;
   line-height: 1.6;
-  /* La vi\00f1eta oscurece las orillas para que la roseta del fondo se lea como
-     una pieza centrada y no como papel tapiz. */
+  /* Oscurece las orillas para centrar la roseta. */
   background-image: radial-gradient(
     ellipse at 50% 32%,
     rgb(45 52 92 / 55%) 0%,
@@ -68,16 +43,7 @@ body {
   background-attachment: fixed;
 }
 
-/*
- * El fondo: UNA roseta de ocho puntas, no una cuadricula repetida.
- *
- * Antes esto era una baldosa teselada de cuadros y rombos, que es exactamente
- * el aspecto de papel tapiz generico. Una sola pieza grande, centrada y fija,
- * con sus anillos y radios, se lee como ornamento y no como relleno.
- *
- * Va en un pseudo-elemento fijo y sin eventos de puntero, para que no estorbe
- * a nada de la pagina y no se mueva con el scroll.
- */
+ /* Fondo: una roseta de ocho puntas, fija y sin eventos de puntero. */
 body::before {
   content: "";
   position: fixed;
@@ -288,7 +254,7 @@ body::before {
   color: var(--tinta-suave);
 }
 
-/* Una k de 40 digitos no cabe en un telefono: se parte donde haga falta. */
+/* Parte una k muy larga en el telefono. */
 .estado--k {
   overflow-wrap: anywhere;
   margin-bottom: 18px;
@@ -299,7 +265,7 @@ body::before {
   font-weight: 700;
 }
 
-/* Aviso que pide una decision, no un error: dorado, con su boton al lado. */
+/* Aviso dorado con su boton. */
 .estado--aviso {
   color: var(--oro);
   margin-top: 8px;
@@ -326,7 +292,7 @@ body::before {
   margin: 0;
 }
 
-/* El resultado del descifrado es lo mas importante de la pagina, y se ve. */
+/* Resultado del descifrado. */
 .resultado {
   margin: 26px 0 20px;
   padding: 22px 24px;
@@ -378,7 +344,7 @@ body::before {
 
 /* ---------------------------------------------------------------- graficas */
 
-/* El histograma es la prueba visual del metodo: es lo que mas crece. */
+/* Histograma. */
 .histograma,
 .curva {
   margin: 26px 0 0;
@@ -400,8 +366,7 @@ body::before {
   border: 1px solid var(--filete);
 }
 
-/* El español va como silueta de fondo, no como barras: es contra lo que se
-   compara, y asi el criptograma puede caer dentro y verse el encaje. */
+/* El español como silueta; el criptograma encima. */
 .histograma__silueta {
   fill: var(--indigo);
   opacity: 0.3;
@@ -484,7 +449,7 @@ body::before {
   color: var(--indigo);
 }
 
-/* El alfabeto como celdas teseladas: comparten arista, no flotan separadas. */
+/* Tabla del alfabeto: celdas que comparten arista. */
 .tabla-alfabeto {
   display: flex;
   flex-wrap: wrap;
@@ -582,13 +547,7 @@ body::before {
   margin: 0 0 10px;
 }
 
-/*
- * Ajustes por tamaño de pantalla y por tipo de apuntador.
- *
- * Medido con Playwright a 390 px: sin estas reglas los campos quedaban en
- * 14 px de letra (por debajo de 16, Safari acerca la pagina sola al enfocar) y
- * los objetivos tactiles entre 22 y 41 px, debajo de los 44 recomendados.
- */
+ /* Telefono: letra de 16 px (Safari no hace zoom) y objetivos de 44 px. */
 
 @media (max-width: 720px) {
   .campo__control,
@@ -620,9 +579,7 @@ body::before {
   }
 }
 
-/* Telefono. Los tamaños tactiles se repiten por ancho porque el navegador
-   no siempre reporta `pointer: coarse`: medido, lo reporto como falso y los
-   objetivos se quedaban chicos. */
+/* Telefono. Se repiten los tamaños tactiles: no siempre se reporta pointer: coarse. */
 @media (max-width: 520px) {
   .app {
     padding: 26px 16px 56px;
@@ -672,23 +629,9 @@ body::before {
   }
 }
 
-/*
- * Fondo propio para telefono: otra composicion, no la misma encogida.
- *
- * Medido a 390 px, la roseta grande no funcionaba: mide mas que la ventana, asi
- * que solo se asomaba un recorte, y al estar fija el resto de la pagina (mas de
- * 3000 px de alto) se quedaba liso. Encogerla la habria vuelto un adorno
- * insignificante.
- *
- * La composicion de aqui es la de un manuscrito iluminado:
- *   - la estrella COMPLETA arriba, del tamaño justo para que quepa entera, y
- *     desvanecida hacia abajo para no competir con el texto;
- *   - una cenefa vertical de estrellas enlazadas bajando por el margen, que sí
- *     acompaña al scroll y decora la pagina entera.
- */
+ /* Telefono: estrella completa arriba y cenefa vertical en lugar de la roseta. */
 @media (max-width: 720px) {
-  /* La cenefa se posiciona contra el documento, no contra la ventana: sin esto
-     mediria el alto de la pantalla y no el de la pagina. */
+  /* Contra el documento, para medir el alto de la pagina. */
   body {
     position: relative;
   }
@@ -717,17 +660,10 @@ body::before {
   }
 }
 
-/*
- * Iluminacion al tocar.
- *
- * `App.jsx` guarda en --x y --y el punto exacto donde esta el puntero sobre el
- * elemento, y aqui se dibuja ahi un halo dorado: la luz nace donde tocas, no en
- * el centro. Al hacer clic se suma un destello de una sola pasada.
- *
- * Va en botones, chips y el bloque de resultado, pero NO en los paneles: el
- * ornamento ◈ de cada panel esta colocado por fuera de su borde, y recortarlos
- * para contener el halo lo cortaria.
- */
+ /*
+  * Halo donde toca el puntero (--x, --y vienen de App.jsx) y destello al hacer
+  * clic. No va en los paneles: recortarlos cortaria su ornamento.
+  */
 .boton,
 .chip,
 .resultado {
@@ -783,7 +719,7 @@ body::before {
   }
 }
 
-/* Cuando llega un descifrado nuevo, una franja dorada recorre el resultado. */
+/* Franja dorada al llegar un resultado nuevo. */
 .resultado::before {
   content: "";
   position: absolute;
@@ -814,7 +750,7 @@ body::before {
   }
 }
 
-/* Si el usuario pidio menos movimiento, se queda el halo pero sin animaciones. */
+/* Reducir movimiento: sin animaciones. */
 @media (prefers-reduced-motion: reduce) {
   .encendido::after,
   .resultado.encendido::before {
@@ -822,8 +758,7 @@ body::before {
   }
 }
 
-/* Computadora: cifrar y descifrar en dos columnas, con el alfabeto completo
-   arriba, para no tener que bajar tanto. */
+/* Computadora: cifrar y descifrar en dos columnas. */
 @media (min-width: 900px) {
   .app {
     display: grid;

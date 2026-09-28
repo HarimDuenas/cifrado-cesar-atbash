@@ -1,28 +1,17 @@
-/**
- * @file Panel del alfabeto: donde el usuario alimenta el conjunto de
- * caracteres con el que se va a cifrar y descifrar.
- *
- * Es el primer punto de la rubrica y la pauta de los demas: el alfabeto define
- * N, y N define el modulo aritmetico, las claves posibles y la referencia
- * estadistica con la que se ataca.
- */
+ /**
+  * @file Panel del alfabeto: define N.
+  */
 
 import { useRef } from 'react'
 
 import { PRESETS } from '../core/alfabeto.js'
 
-/** Ejemplo de alfabeto fuera de ASCII: las 27 letras mas un espacio y dos emojis. */
 const CON_EMOJIS = `${PRESETS.espanolMayusculas.simbolos} 👍🎯`
 
-/** Hasta cuantos simbolos se listan junto al estado; mas que eso es ruido. */
+// Arriba de esto no se listan los simbolos.
 const LISTAR_HASTA = 40
 
-/**
- * Vuelve visible un simbolo que de otro modo no se ve.
- *
- * @param {string} simbolo
- * @returns {string}
- */
+ // Hace visibles el espacio, el salto de linea y el tabulador.
 function visible(simbolo) {
   if (simbolo === ' ') return '␣'
   if (simbolo === '\n') return '⏎'
@@ -30,17 +19,16 @@ function visible(simbolo) {
   return simbolo
 }
 
-/**
- * @param {object} props
- * @param {string} props.entrada Texto crudo del alfabeto.
- * @param {(valor: string) => void} props.onCambiar Se llama con el texto nuevo.
- * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto Alfabeto valido, o null.
- * @param {string | null} props.error Mensaje de validacion, si hay.
- * @param {string[]} props.repetidos Simbolos que se quitaron por aparecer mas de una vez.
- * @param {ReturnType<typeof import('../core/alfabeto.js').limpiarAlfabeto>} props.limpieza
- *   Lo que se quito del texto pegado (saltos, invisibles) y los espacios del borde.
- * @param {number} props.cobertura Que parte del corpus del español cubre (0 a 1).
- */
+ /**
+  * @param {object} props
+  * @param {string} props.entrada Texto crudo.
+  * @param {(valor: string) => void} props.onCambiar
+  * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto
+  * @param {string | null} props.error
+  * @param {string[]} props.repetidos
+  * @param {ReturnType<typeof import('../core/alfabeto.js').limpiarAlfabeto>} props.limpieza
+  * @param {number} props.cobertura Entre 0 y 1.
+  */
 export function PanelAlfabeto({
   entrada,
   onCambiar,
@@ -54,12 +42,9 @@ export function PanelAlfabeto({
   const preset = Object.values(PRESETS).find((opcion) => opcion.simbolos === entrada)
   const conEmojis = entrada === CON_EMOJIS
   const personalizado = !preset && !conEmojis
-  // Vacio no es un error: es el punto de partida de "Personalizado". Tambien
-  // cuenta como vacio lo que solo trae un salto de linea o invisibles.
+  // Vacio es el punto de partida de "Personalizado", no un error.
   const vacio = limpieza.simbolos === ''
 
-  // Lo que se quito del pegado, en una sola frase: "2 saltos de linea y 1
-  // caracter invisible (U+FE0F)".
   const quitado = [
     limpieza.saltos && `${limpieza.saltos} ${limpieza.saltos === 1 ? 'salto' : 'saltos'} de línea`,
     limpieza.tabuladores &&
@@ -68,8 +53,7 @@ export function PanelAlfabeto({
       `${limpieza.invisibles.length} ${limpieza.invisibles.length === 1 ? 'carácter invisible' : 'caracteres invisibles'} (${[...new Set(limpieza.invisibles)].join(', ')})`,
   ].filter(Boolean)
 
-  // El ASCII imprimible empieza con un espacio a proposito: el aviso de los
-  // espacios del borde es solo para lo que el usuario escribe o pega.
+  // El ASCII empieza con espacio: el aviso es solo para lo personalizado.
   const { inicio, fin } = limpieza.espaciosBorde
   const avisarBorde = personalizado && !vacio && (inicio > 0 || fin > 0)
 
