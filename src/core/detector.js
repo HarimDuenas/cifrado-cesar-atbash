@@ -52,14 +52,48 @@ export const UMBRAL_IC = 0.35
 export const CANDIDATOS_A_VERIFICAR = 8
 
 /**
- * [DT-04] Peso de cada juez al combinar la verificacion. Suman 1.
+ * [DT-04] Peso de cada juez al sumarlos: puntaje = simbolos + bigramas + 0.5 · palabras.
+ *
+ * Se suman en crudo porque `simbolos` y `bigramas` ya son logaritmos de
+ * probabilidad (por simbolo y por par), o sea la misma escala; `palabras` es
+ * una proporcion y entra como un bono de hasta 0.5.
+ *
+ * Antes se normalizaban con puntajes z, y eso fallaba con textos cortos: en
+ * casi todos los candidatos las palabras valen 0, asi que una basura que por
+ * casualidad formaba "va" o "ha" se disparaba a un z enorme y aplastaba a los
+ * otros dos jueces. Medido sobre 5 774 casos de 12 a 30 simbolos: los z daban
+ * 99 respuestas equivocadas; la suma directa, ninguna.
  *
  * `simbolos` es el juez que mira TODO lo descifrado, no solo las letras: sin el,
  * con alfabetos de cientos de simbolos una clave equivocada convertia casi todo
  * en simbolos raros, esos simbolos se borraban antes de calificar y lo poco que
  * quedaba ("e e a de dad") parecia español. Asi fallo el examen.
  */
-export const PESOS = Object.freeze({ bigramas: 0.35, palabras: 0.3, simbolos: 0.35 })
+export const PESOS = Object.freeze({ simbolos: 1, bigramas: 1, palabras: 0.5 })
+
+/**
+ * [DT-14] Ventaja minima del primer candidato sobre el segundo para entregar la
+ * linea. Por debajo, dos claves explican el texto casi igual de bien y el
+ * sistema se abstiene en vez de apostar.
+ *
+ * Solo pesa con textos muy cortos: medido sobre 19 094 textos de 12 a 16
+ * simbolos, 14 de los 16 errores ganaban por menos de esto, y abstenerse
+ * los evita a cambio de unos 30 aciertos (0.15%) que se vuelven "no alcanza".
+ * Con textos de 20 simbolos o mas, la ventaja real es de 1 a 2 puntos.
+ */
+export const MARGEN_MINIMO = 0.25
+
+/** Puntaje de bigramas cuando no hay ni un par de letras que calificar. */
+const SIN_BIGRAMAS = -6
+
+/**
+ * Cuanto castiga a los bigramas cada simbolo ilegible: se suma
+ * `CASTIGO_ILEGIBLE · log10(legibilidad)`. Con 1 se quedaba corto: "CÉ↡CÉ véSÉ
+ * r⊈;" (2 simbolos raros de 14) reducido a "ce ce ve se" le ganaba por 0.03 a
+ * "SALSA ROCA 321". Con 3, medido sobre 16 400 casos, bajan los errores con
+ * textos de 12 a 16 simbolos sin tocar ninguno de los demas.
+ */
+const CASTIGO_ILEGIBLE = 3
 
 /**
  * [DT-05] Si la cobertura del alfabeto en el corpus es menor a esto, no hay tabla de
@@ -379,40 +413,42 @@ export function detectar(criptograma, alfabeto, { soloCesarYAtbash = true } = {}
       ...clasificar(clave, n),
       correlacion: correlacion(ref, obs, clave.a, clave.b, n),
       textoClaro,
-      bigramas: puntajeBigramas(textoClaro) + Math.log10(legible),
+      bigramas: puntajeBigramas(textoClaro) + CASTIGO_ILEGIBLE * Math.log10(legible),
       palabras: coberturaDePalabras(textoClaro) * legible,
       simbolos,
     }
   })
 
-  // Los dos jueces viven en escalas distintas (un logaritmo y una proporcion),
-  // asi que se comparan entre candidatos y no en crudo.
-  const zetas = (valores) => {
-    const finitos = valores.filter(Number.isFinite)
-    const media = finitos.reduce((suma, v) => suma + v, 0) / (finitos.length || 1)
-    const varianza =
-      finitos.reduce((suma, v) => suma + (v - media) ** 2, 0) / (finitos.length || 1)
-    const desv = Math.max(Math.sqrt(varianza), 1e-9)
-    return valores.map((v) => (Number.isFinite(v) ? (v - media) / desv : -5))
-  }
-
-  const zBigramas = zetas(mejores.map((candidato) => candidato.bigramas))
-  const zPalabras = zetas(mejores.map((candidato) => candidato.palabras))
-  const zSimbolos = zetas(mejores.map((candidato) => candidato.simbolos))
-
+  // Suma directa de los tres jueces: ver [DT-04] para el por que.
   const candidatos = mejores
-    .map((candidato, indice) => ({
+    .map((candidato) => ({
       ...candidato,
       puntaje:
-        PESOS.bigramas * zBigramas[indice] +
-        PESOS.palabras * zPalabras[indice] +
-        PESOS.simbolos * zSimbolos[indice],
+        PESOS.simbolos * candidato.simbolos +
+        PESOS.bigramas *
+          (Number.isFinite(candidato.bigramas) ? candidato.bigramas : SIN_BIGRAMAS) +
+        PESOS.palabras * candidato.palabras,
     }))
     .sort((x, y) => y.puntaje - x.puntaje)
     .slice(0, CANDIDATOS_A_VERIFICAR)
 
   const probs = probabilidades(candidatos.map((candidato) => candidato.puntaje))
   const ganador = candidatos[0]
+
+  // Empate: con tan poca muestra, dos claves explican el texto casi igual. Se
+  // dice, en vez de entregar una linea que puede estar mal. Ver [DT-14].
+  const ventaja = candidatos.length > 1 ? ganador.puntaje - candidatos[1].puntaje : Infinity
+  if (ventaja < MARGEN_MINIMO) {
+    return {
+      ...base,
+      atacable: false,
+      candidatos,
+      diagnostico:
+        `Con ${total} símbolos, dos claves explican el texto casi igual de bien ` +
+        `("${ganador.textoClaro.slice(0, 24)}" y "${candidatos[1].textoClaro.slice(0, 24)}"). ` +
+        'No hay muestra suficiente para decidir entre ellas; con un texto un poco más largo se resuelve.',
+    }
+  }
 
   // --- Paso 3: una sola linea.
   return {

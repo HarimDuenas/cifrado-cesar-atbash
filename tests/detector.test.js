@@ -342,6 +342,47 @@ describe('alfabetos personalizados grandes y revueltos, con textos cortos', () =
     },
   )
 
+  /*
+   * Textos de 12 a 16 simbolos, lo minimo con lo que el detector se anima. Con
+   * tan poca muestra, casi todos los candidatos sacan 0% de palabras, y antes
+   * una basura que formaba "va" o "ha" por casualidad ganaba ("Salsa roca 321"
+   * con Atbash salia como "Va7@a ÷+ha qPb"). Van con digitos, mayuscula inicial
+   * y palabras que no estan en la lista del corpus, a proposito.
+   */
+  const MUY_CORTAS = [
+    'Salsa roca 321',
+    'SALSA ROCA 321',
+    'Mi perro come pan',
+    'Hoy llueve mucho',
+    'Clase 7 a las 9',
+    'Tengo examen hoy',
+  ]
+
+  it.each([130, 179, 430])(
+    'N = %i: textos de 12 a 16 simbolos, sin una sola respuesta equivocada',
+    (n) => {
+      const alfabeto = alfabetoRevuelto(n, n * 13, { conEspacio: false })
+      const r = azar(n + 1)
+      const fallos = []
+
+      for (const frase of MUY_CORTAS) {
+        const k = 1 + Math.floor(r() * (n - 1))
+        for (const [tipo, criptograma] of [
+          ['cesar', cifrarCesar(frase, alfabeto, k)],
+          ['atbash', atbash(frase, alfabeto)],
+        ]) {
+          const resultado = detectar(criptograma, alfabeto)
+          // Abstenerse es valido con tan poca muestra; equivocarse no.
+          if (resultado.atacable && resultado.ganador.textoClaro !== frase) {
+            fallos.push(`${tipo} k=${k} "${frase}" -> "${resultado.ganador.textoClaro}"`)
+          }
+        }
+      }
+
+      expect(fallos).toEqual([])
+    },
+  )
+
   it('nunca responde un afin: Atbash es solo a = -1 con b = N - 1', () => {
     const alfabeto = alfabetoRevuelto(430, 1, { conEspacio: false })
     for (const frase of CORTAS) {

@@ -93,7 +93,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[DT-01]` | `MINIMO_SIMBOLOS` | Cuántos símbolos hacen falta para intentar el ataque (12). Con menos, la muestra estadística no alcanza y el sistema se abstiene |
 | `[DT-02]` | `UMBRAL_IC` | Qué tan arriba del azar debe estar el índice de coincidencia para dar por bueno que el texto es monoalfabético (0.35 del camino entre el azar y el español) |
 | `[DT-03]` | `CANDIDATOS_A_VERIFICAR` | Cuántos candidatos, ya verificados, se muestran como evidencia y entran al cálculo de la confianza (8) |
-| `[DT-04]` | `PESOS` | Cuánto pesa cada juez al combinarlos: 0.35 los bigramas, 0.3 las palabras y 0.35 la verosimilitud símbolo por símbolo |
+| `[DT-04]` | `PESOS` | Cómo se combinan los jueces: se **suman** la verosimilitud y los bigramas (los dos son logaritmos de probabilidad, la misma escala) más medio punto por la proporción de palabras reconocidas. Antes se normalizaban con puntajes z y, con textos cortos, una basura que formaba "va" o "ha" por casualidad aplastaba a los otros jueces |
 | `[DT-05]` | `MINIMA_COBERTURA` | Cobertura mínima del alfabeto en el corpus para que haya referencia utilizable (0.2). Por debajo, el programa avisa que no puede atacar |
 | `[DT-06]` | `correlacion` | Calcula `R(a,b) = Σᵢ ref[i] · obs[(a·i + b) mod N]`: la correlación cruzada entre la frecuencia esperada del español y la observada en el criptograma. **Es el método de al-Kindī escrito en álgebra** |
 | `[DT-07]` | `multiplicadoresValidos` | Lista los multiplicadores que sirven para el alfabeto: con 95 símbolos son 72 |
@@ -103,6 +103,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[DT-11]` | `PRESELECCION` | Cuántas claves, las más verosímiles, pasan a la verificación con bigramas y palabras (32). El filtro va primero porque esos dos jueces se dejan engañar por descifrados llenos de símbolos raros |
 | `[DT-12]` | `verosimilitud` | Qué tan español es, símbolo por símbolo, lo que produce una clave: promedio del logaritmo de la frecuencia esperada de cada símbolo descifrado. Un símbolo que el español no usa cuesta mucho, así que el texto basura no puede parecer bueno |
 | `[DT-13]` | `referenciaSinMayusculas` | Suma la frecuencia de mayúsculas y minúsculas de cada letra, para que un texto correcto escrito en MAYÚSCULAS no salga castigado. No junta las tildes: si "é" valiera lo mismo que "e", un descifrado basura lleno de acentos pasaría |
+| `[DT-14]` | `MARGEN_MINIMO` | Ventaja mínima del primer candidato sobre el segundo para entregar la línea (0.25). Por debajo, dos claves explican el texto casi igual de bien y el sistema dice que no puede decidir en vez de apostar. Solo pesa con textos de 12 a 16 símbolos |
 
 ## Por qué esta forma de documentar
 
