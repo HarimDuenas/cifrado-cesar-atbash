@@ -1,53 +1,36 @@
 /**
- * @file Cifrado Atbash: el caso afin con `a = -1` y `b = N - 1`.
- *
- * Voltea el alfabeto de punta a punta, asi que el primer simbolo se cambia por
- * el ultimo, el segundo por el penultimo, y asi. En formula:
- *
- *     C(i) = (N - 1 - i) mod N
- *
- * Dos consecuencias que conviene tener claras, porque el programa las reporta:
- *
- * 1. **No tiene clave.** Es una permutacion fija: el unico "secreto" es saber
- *    que se uso Atbash, y eso es seguridad por oscuridad. Por lo mismo, aqui no
- *    hay modulo que elegir ni que detectar.
- * 2. **Es su propia inversa.** Aplicarlo dos veces devuelve el texto original,
- *    asi que cifrar y descifrar son la misma funcion.
+ * @file Cifrado Atbash: el caso afin con a = -1 y b = N - 1.
+ * No tiene clave y es su propia inversa.
  */
 
 import { aplicarAfin } from './afin.js'
 
-/** [AT-01] El multiplicador que define a Atbash dentro de la familia afin. */
+/** [AT-01] */
 export const A_ATBASH = -1
 
 /**
- * [AT-02] Clave afin equivalente a Atbash para un alfabeto de `n` simbolos.
- *
- * @param {number} n Tamaño del alfabeto.
- * @returns {import('./afin.js').ClaveAfin} La clave `{ a: -1, b: n - 1 }`.
+ * [AT-02]
+ * @param {number} n
+ * @returns {import('./afin.js').ClaveAfin}
  */
 export function claveAtbash(n) {
   return { a: A_ATBASH, b: n - 1 }
 }
 
 /**
- * [AT-03] Aplica Atbash. Sirve para cifrar y para descifrar, porque es su propia
- * inversa: `atbash(atbash(texto)) === texto`.
- *
- * @param {string} texto Texto claro o criptograma, da lo mismo.
- * @param {import('./alfabeto.js').Alfabeto} alfabeto Alfabeto con el que se opera.
- * @returns {string} El texto con el alfabeto volteado.
- *
+ * [AT-03]
+ * @param {string} texto
+ * @param {import('./alfabeto.js').Alfabeto} alfabeto
+ * @returns {string}
  * @example
- * const alfabeto = crearAlfabeto(ESPANOL_MAYUSCULAS)
- * atbash('ABC', alfabeto)  // 'ZYX'
+ * atbash('ABC', crearAlfabeto(ESPANOL_MAYUSCULAS))  // 'ZYX'
  */
 export function atbash(texto, alfabeto) {
   return aplicarAfin(texto, alfabeto, claveAtbash(alfabeto.n))
 }
 
-/** [AT-04] Alias explicito para leer el codigo de la interfaz sin ambiguedad. */
+/** [AT-04] */
 export const cifrarAtbash = atbash
 
-/** [AT-05] Alias explicito: es la misma operacion que cifrar. */
+/** [AT-05] */
 export const descifrarAtbash = atbash

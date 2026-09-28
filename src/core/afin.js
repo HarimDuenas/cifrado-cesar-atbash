@@ -1,32 +1,21 @@
 /**
- * @file El cifrado Afin (El corazon del proyecto).
- *
- * Cesar y Atbash no son dos cifrados distintos: son dos casos particulares de
- * la misma operacion sobre el indice `i` de cada simbolo dentro del alfabeto.
- *
- *     C(i) = (a · i + b) mod N
- *
- *     Cesar  ->  a = +1,  b = k        (corre el alfabeto k lugares)
- *     Atbash ->  a = -1,  b = N - 1    (lo voltea de punta a punta)
- *
- * Tratarlos como una sola familia es lo que permite despues *calcular* la clave
- * en vez de probar las N posibles: ver `detector.js`.
+ * @file Cifrado afin: C(i) = (a · i + b) mod N.
+ * Cesar es a = 1, b = k. Atbash es a = -1, b = N - 1.
  */
 
 import { modulo } from './alfabeto.js'
 
 /**
  * @typedef {object} ClaveAfin
- * @property {number} a Multiplicador. Debe ser invertible modulo N.
- * @property {number} b Desplazamiento.
+ * @property {number} a Invertible modulo N.
+ * @property {number} b
  */
 
 /**
- * [AF-01] Maximo comun divisor por el algoritmo de Euclides.
- *
+ * [AF-01]
  * @param {number} a
  * @param {number} b
- * @returns {number} El MCD de los valores absolutos.
+ * @returns {number}
  */
 export function mcd(a, b) {
   let x = Math.abs(a)
@@ -38,15 +27,9 @@ export function mcd(a, b) {
 }
 
 /**
- * [AF-02] Dice si `a` sirve como multiplicador de un cifrado afin con modulo `n`.
- *
- * Solo sirve si `a` y `n` no comparten divisores: si los comparten, la
- * operacion manda dos simbolos distintos al mismo resultado y el mensaje deja
- * de poder descifrarse. Por eso Cesar (`a = 1`) y Atbash (`a = -1`) siempre son
- * validos, con cualquier alfabeto.
- *
- * @param {number} a Multiplicador.
- * @param {number} n Tamaño del alfabeto.
+ * [AF-02]
+ * @param {number} a
+ * @param {number} n
  * @returns {boolean}
  */
 export function esInvertible(a, n) {
@@ -54,19 +37,14 @@ export function esInvertible(a, n) {
 }
 
 /**
- * [AF-03] Inverso multiplicativo de `a` modulo `n`: el numero que cumple
- * `a · inverso ≡ 1 (mod n)`. Es la pieza que permite deshacer la
- * multiplicacion al descifrar.
- *
- * Se calcula con el algoritmo extendido de Euclides, que va guardando cuanto
- * de `a` hay en cada residuo.
- *
- * @param {number} a Multiplicador.
- * @param {number} n Tamaño del alfabeto.
- * @returns {number} El inverso, en [0, n).
+ * [AF-03]
+ * @param {number} a
+ * @param {number} n
+ * @returns {number} En [0, n).
  * @throws {Error} Si `a` no es invertible modulo `n`.
  */
 export function inversoModular(a, n) {
+  // Euclides extendido.
   const base = modulo(a, n)
   let [residuoAnterior, residuo] = [n, base]
   let [coefAnterior, coef] = [0, 1]
@@ -88,12 +66,10 @@ export function inversoModular(a, n) {
 }
 
 /**
- * [AF-04] Clave que deshace a otra: si `C(i) = (a·i + b) mod N`, su inversa es
- * `P(j) = (a⁻¹·j - a⁻¹·b) mod N`.
- *
- * @param {ClaveAfin} clave Clave original.
- * @param {number} n Tamaño del alfabeto.
- * @returns {ClaveAfin} La clave que revierte la operacion.
+ * [AF-04]
+ * @param {ClaveAfin} clave
+ * @param {number} n
+ * @returns {ClaveAfin}
  */
 export function claveInversa({ a, b }, n) {
   const inverso = inversoModular(a, n)
@@ -101,23 +77,14 @@ export function claveInversa({ a, b }, n) {
 }
 
 /**
- * [AF-05] Aplica una clave afin a un texto, simbolo por simbolo.
- *
- * Los caracteres que no pertenecen al alfabeto **pasan sin cambio**. Es una
- * decision de diseño: si se descartaran, el mensaje descifrado no coincidiria
- * con el original; y si se cifraran, harian falta en el alfabeto. Con el ASCII
- * imprimible por defecto, esto significa que las vocales acentuadas y la ñ
- * quedan a la vista en el criptograma.
- *
- * @param {string} texto Texto de entrada.
- * @param {import('./alfabeto.js').Alfabeto} alfabeto Alfabeto con el que se opera.
- * @param {ClaveAfin} clave Multiplicador y desplazamiento.
- * @returns {string} El texto transformado.
- * @throws {Error} Si el multiplicador no es invertible (el resultado no se podria deshacer).
- *
+ * [AF-05]
+ * @param {string} texto
+ * @param {import('./alfabeto.js').Alfabeto} alfabeto
+ * @param {ClaveAfin} clave
+ * @returns {string}
+ * @throws {Error} Si la clave no es entera o `a` no es invertible.
  * @example
- * const alfabeto = crearAlfabeto(ASCII_IMPRIMIBLE)
- * aplicarAfin('HOLA', alfabeto, { a: 1, b: 17 })  // corrimiento de 17
+ * aplicarAfin('HOLA', crearAlfabeto(ASCII_IMPRIMIBLE), { a: 1, b: 17 })
  */
 export function aplicarAfin(texto, alfabeto, { a, b }) {
   if (!Number.isInteger(a) || !Number.isInteger(b)) {
@@ -130,6 +97,7 @@ export function aplicarAfin(texto, alfabeto, { a, b }) {
     )
   }
 
+  // Lo que no esta en el alfabeto pasa sin cambio.
   let salida = ''
   for (const simbolo of texto) {
     const indice = alfabeto.indiceDe(simbolo)
