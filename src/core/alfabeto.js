@@ -169,3 +169,68 @@ export function quitarRepetidos(entrada, { normalizar = true } = {}) {
 
   return { simbolos: unicos.join(''), repetidos: [...repetidos] }
 }
+
+/**
+ * Caracteres que no se ven y que nadie pone a proposito en un alfabeto, pero
+ * que se cuelan al copiar de Word, un PDF o un chat: selectores de variacion
+ * (el U+FE0F que convierte "✔" en emoji), espacios de ancho cero, marcas de
+ * direccion, el guion suave y la marca de orden de bytes.
+ */
+const INVISIBLES = /[︀-️​-‏⁠﻿­]/u
+
+/**
+ * [AL-07] Limpia un alfabeto pegado, antes de quitar repetidos.
+ *
+ * Un solo caracter de mas cambia N y descuadra la vuelta del alfabeto: medido,
+ * un salto de linea al final hacia que "Disfruta tu tiempo" saliera "tiTkpo".
+ * Por eso se quitan siempre los saltos de linea, los tabuladores y los
+ * invisibles, y el espacio de no separacion (U+00A0, el que mete Word) se
+ * cambia por un espacio normal.
+ *
+ * Los espacios al inicio o al final NO se quitan: el espacio puede ser parte
+ * legitima del alfabeto. Solo se cuentan, para que la interfaz pregunte.
+ *
+ * @param {string} entrada Texto crudo del alfabeto, tal como se pego.
+ * @returns {{
+ *   simbolos: string,
+ *   saltos: number,
+ *   tabuladores: number,
+ *   invisibles: string[],
+ *   espaciosDuros: number,
+ *   espaciosBorde: { inicio: number, fin: number },
+ * }} La cadena limpia y lo que se hizo, para avisarlo.
+ *
+ * @example
+ * limpiarAlfabeto('ABC\r\n').simbolos        // 'ABC'
+ * limpiarAlfabeto('✔️★').invisibles    // ['U+FE0F']
+ */
+export function limpiarAlfabeto(entrada) {
+  let saltos = 0
+  let tabuladores = 0
+  let espaciosDuros = 0
+  const invisibles = []
+  const limpios = []
+
+  for (const caracter of Array.from(String(entrada ?? ''))) {
+    if (caracter === '\n') {
+      saltos += 1
+    } else if (caracter === '\r') {
+      // El \r de un salto de Windows (\r\n) no cuenta como un salto aparte.
+    } else if (caracter === '\t') {
+      tabuladores += 1
+    } else if (INVISIBLES.test(caracter)) {
+      invisibles.push(`U+${caracter.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`)
+    } else if (caracter === ' ') {
+      espaciosDuros += 1
+      limpios.push(' ')
+    } else {
+      limpios.push(caracter)
+    }
+  }
+
+  const simbolos = limpios.join('')
+  const inicio = simbolos.length - simbolos.replace(/^ +/, '').length
+  const fin = simbolos.trim() === '' ? 0 : simbolos.length - simbolos.replace(/ +$/, '').length
+
+  return { simbolos, saltos, tabuladores, invisibles, espaciosDuros, espaciosBorde: { inicio, fin } }
+}

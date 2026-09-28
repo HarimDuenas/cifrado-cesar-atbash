@@ -4,6 +4,7 @@ import {
   ASCII_IMPRIMIBLE,
   ESPANOL_MAYUSCULAS,
   crearAlfabeto,
+  limpiarAlfabeto,
   modulo,
   quitarRepetidos,
 } from '../src/core/alfabeto.js'
@@ -81,6 +82,37 @@ describe('alfabeto', () => {
 
   it('lo que devuelve quitarRepetidos siempre es un alfabeto valido', () => {
     expect(crearAlfabeto(quitarRepetidos('MURCIÉLAGO ARRIBA').simbolos).n).toBe(12)
+  })
+
+  it('limpiarAlfabeto quita saltos de linea y tabuladores, de Windows o no', () => {
+    const r = limpiarAlfabeto('ABC\r\nDEF\n\tGH\r\n')
+    expect(r.simbolos).toBe('ABCDEFGH')
+    expect(r.saltos).toBe(3)
+    expect(r.tabuladores).toBe(1)
+  })
+
+  it('limpiarAlfabeto quita los invisibles y dice cuales', () => {
+    const r = limpiarAlfabeto('A✔️B​C﻿')
+    expect(r.simbolos).toBe('A✔BC')
+    expect(r.invisibles).toEqual(['U+FE0F', 'U+200B', 'U+FEFF'])
+  })
+
+  it('limpiarAlfabeto cambia el espacio de Word por uno normal', () => {
+    const r = limpiarAlfabeto('A B')
+    expect(r.simbolos).toBe('A B')
+    expect(r.espaciosDuros).toBe(1)
+  })
+
+  it('limpiarAlfabeto no quita espacios del borde: solo los cuenta', () => {
+    expect(limpiarAlfabeto('  AB ')).toMatchObject({ simbolos: '  AB ', espaciosBorde: { inicio: 2, fin: 1 } })
+    expect(limpiarAlfabeto('A B')).toMatchObject({ espaciosBorde: { inicio: 0, fin: 0 } })
+    expect(limpiarAlfabeto('')).toMatchObject({ simbolos: '', espaciosBorde: { inicio: 0, fin: 0 } })
+  })
+
+  it('un alfabeto pegado con basura invisible queda igual que el limpio', () => {
+    const limpio = crearAlfabeto('ABCDEFGHIJ✔KLMNÑOPQRSTUVWXYZ')
+    const sucio = 'ABCDEFGHIJ✔️KLMN\r\nÑOPQRSTUVWXYZ\r\n'
+    expect(crearAlfabeto(limpiarAlfabeto(sucio).simbolos).toString()).toBe(limpio.toString())
   })
 
   it('el modulo nunca devuelve negativos', () => {
