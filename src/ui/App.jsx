@@ -9,7 +9,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { ASCII_IMPRIMIBLE, crearAlfabeto, quitarRepetidos } from '../core/alfabeto.js'
+import {
+  ASCII_IMPRIMIBLE,
+  crearAlfabeto,
+  limpiarAlfabeto,
+  quitarRepetidos,
+} from '../core/alfabeto.js'
 import { cifrarCesar, reducirDesplazamiento } from '../core/cesar.js'
 import { atbash } from '../core/atbash.js'
 import { detectar } from '../core/detector.js'
@@ -105,16 +110,18 @@ export default function App() {
     }
   }, [])
 
-  // Lo que escribe el usuario se limpia de repetidos antes de construir el
-  // alfabeto: asi cualquier cadena sirve ("HOLA MUNDO" queda en 9 simbolos) y
-  // el panel avisa que quito. Aun puede ser invalido mientras escribe (menos de
-  // dos simbolos), asi que se construye dentro de un try.
-  const { alfabeto, error, repetidos } = useMemo(() => {
-    const limpio = quitarRepetidos(entradaAlfabeto)
+  // Lo que escribe o pega el usuario se limpia en dos pasos antes de construir
+  // el alfabeto: primero la basura del pegado (saltos de linea, invisibles),
+  // despues los repetidos. Asi cualquier cadena sirve ("HOLA MUNDO" queda en 9
+  // simbolos) y el panel avisa que quito. Aun puede ser invalido mientras
+  // escribe (menos de dos simbolos), asi que se construye dentro de un try.
+  const { alfabeto, error, repetidos, limpieza } = useMemo(() => {
+    const limpieza = limpiarAlfabeto(entradaAlfabeto)
+    const { simbolos, repetidos } = quitarRepetidos(limpieza.simbolos)
     try {
-      return { alfabeto: crearAlfabeto(limpio.simbolos), error: null, repetidos: limpio.repetidos }
+      return { alfabeto: crearAlfabeto(simbolos), error: null, repetidos, limpieza }
     } catch (falla) {
-      return { alfabeto: null, error: falla.message, repetidos: limpio.repetidos }
+      return { alfabeto: null, error: falla.message, repetidos, limpieza }
     }
   }, [entradaAlfabeto])
 
@@ -166,6 +173,7 @@ export default function App() {
         alfabeto={alfabeto}
         error={error}
         repetidos={repetidos}
+        limpieza={limpieza}
         cobertura={referencia?.cobertura ?? 0}
       />
 
