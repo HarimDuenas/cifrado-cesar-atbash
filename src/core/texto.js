@@ -59,6 +59,35 @@ export function bigramasDe(texto) {
   return pares
 }
 
+/** Lo que puede aparecer en un texto en español ademas de letras y espacios. */
+const PUNTUACION_ESPAÑOLA = new Set(Array.from('0123456789.,;:¿?¡!"\'()-«»'))
+
+/**
+ * [TX-06] Que proporcion del texto se puede leer como español.
+ *
+ * `reducir` convierte en espacio todo lo que no es letra, y eso esta bien para
+ * contar bigramas, pero esconde un problema: con un alfabeto de cientos de
+ * simbolos, un descifrado equivocado sale lleno de simbolos raros, `reducir`
+ * los borra y lo poco que queda ("so", "de") parece español. Esta medida si
+ * los cuenta: letras (con o sin tilde, con Ñ), digitos, espacios y puntuacion
+ * cuentan como legibles; "⓪", "☿" o "Ж" no.
+ *
+ * @param {string} texto
+ * @returns {number} Entre 0 y 1. Un texto vacio da 0.
+ */
+export function legibilidad(texto) {
+  const caracteres = Array.from(String(texto))
+  if (caracteres.length === 0) return 0
+  let legibles = 0
+  for (const caracter of caracteres) {
+    const simple = quitarTildes(caracter.toLowerCase())
+    if (PERMITIDAS.has(simple) || /\s/.test(caracter) || PUNTUACION_ESPAÑOLA.has(caracter)) {
+      legibles += 1
+    }
+  }
+  return legibles / caracteres.length
+}
+
 /**
  * [TX-05] Palabras del texto reducido, de 2 a 20 caracteres.
  *

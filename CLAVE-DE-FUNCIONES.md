@@ -70,6 +70,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[TX-03]` | `reducir` | Deja el texto en minúsculas, sin tildes y con solo letras y espacios simples |
 | `[TX-04]` | `bigramasDe` | Extrae los pares de caracteres consecutivos del texto reducido |
 | `[TX-05]` | `palabrasDe` | Extrae las palabras de 2 a 20 caracteres del texto reducido |
+| `[TX-06]` | `legibilidad` | Qué proporción del texto se puede leer como español: letras con o sin tilde, Ñ, dígitos, espacios y puntuación. Existe porque `[TX-03]` borra todo lo demás, y con alfabetos de cientos de símbolos un descifrado basura lleno de símbolos raros quedaba reducido a "so s" y parecía español |
 
 ## FR · Frecuencias
 
@@ -81,7 +82,7 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 | `[FR-04]` | `SUAVIZADO` | Valor mínimo que se suma a cada símbolo de la referencia, para que ninguno quede en cero y un emoji no vuelva imposible un texto |
 | `[FR-05]` | `histograma` | Cuenta cuántas veces aparece cada símbolo del alfabeto en un texto, y lo convierte a proporciones. Lo que no pertenece al alfabeto se ignora, porque no fue cifrado |
 | `[FR-06]` | `indiceDeCoincidencia` | Calcula `IC = Σ nᵢ(nᵢ−1) / [n(n−1)]`: la probabilidad de que dos símbolos tomados al azar sean el mismo. Una sustitución monoalfabética no lo altera, y por eso delata si el texto es atacable |
-| `[FR-07]` | `referenciaParaAlfabeto` | Proyecta la tabla del español sobre el alfabeto elegido, doblando minúsculas y acentuadas sobre el símbolo correspondiente. Informa además qué proporción del idioma cubre ese alfabeto |
+| `[FR-07]` | `referenciaParaAlfabeto` | Proyecta la tabla del español sobre el alfabeto elegido, doblando minúsculas y acentuadas sobre el símbolo correspondiente. Cada símbolo se registra primero tal cual y solo después sus variantes sin tilde, para que en un alfabeto revuelto la "ó" no se quede con la frecuencia de la "o". Informa además qué proporción del idioma cubre ese alfabeto |
 | `[FR-08]` | `puntajeBigramas` | Promedia el logaritmo de la probabilidad de cada par de letras: descarta candidatos con combinaciones imposibles en español |
 | `[FR-09]` | `coberturaDePalabras` | Mide qué proporción de las letras forman palabras que existen, pesada por la longitud de cada palabra |
 
@@ -91,14 +92,17 @@ en la tabla que le corresponde. El prefijo dice en qué archivo está.
 |---|---|---|
 | `[DT-01]` | `MINIMO_SIMBOLOS` | Cuántos símbolos hacen falta para intentar el ataque (12). Con menos, la muestra estadística no alcanza y el sistema se abstiene |
 | `[DT-02]` | `UMBRAL_IC` | Qué tan arriba del azar debe estar el índice de coincidencia para dar por bueno que el texto es monoalfabético (0.35 del camino entre el azar y el español) |
-| `[DT-03]` | `CANDIDATOS_A_VERIFICAR` | Cuántos candidatos del paso 1 pasan a la verificación del paso 2 (8) |
-| `[DT-04]` | `PESOS` | Cuánto pesa cada juez al combinarlos: 0.6 los bigramas y 0.4 las palabras |
+| `[DT-03]` | `CANDIDATOS_A_VERIFICAR` | Cuántos candidatos, ya verificados, se muestran como evidencia y entran al cálculo de la confianza (8) |
+| `[DT-04]` | `PESOS` | Cuánto pesa cada juez al combinarlos: 0.35 los bigramas, 0.3 las palabras y 0.35 la verosimilitud símbolo por símbolo |
 | `[DT-05]` | `MINIMA_COBERTURA` | Cobertura mínima del alfabeto en el corpus para que haya referencia utilizable (0.2). Por debajo, el programa avisa que no puede atacar |
 | `[DT-06]` | `correlacion` | Calcula `R(a,b) = Σᵢ ref[i] · obs[(a·i + b) mod N]`: la correlación cruzada entre la frecuencia esperada del español y la observada en el criptograma. **Es el método de al-Kindī escrito en álgebra** |
 | `[DT-07]` | `multiplicadoresValidos` | Lista los multiplicadores que sirven para el alfabeto: con 95 símbolos son 72 |
 | `[DT-08]` | `clasificar` | Dada la clave encontrada, decide si es César (y con qué módulo), Atbash o un afín genérico, y arma la etiqueta que ve el usuario |
 | `[DT-09]` | `probabilidades` | Convierte los puntajes de los candidatos en probabilidades relativas: de ahí sale la confianza que muestra la interfaz. Si dos candidatos empatan, la confianza baja sola |
-| `[DT-10]` | `detectar` | **El ataque completo, en cuatro pasos:** paso 0, decide si el texto es atacable con el índice de coincidencia; paso 1, calcula la clave por correlación cruzada; paso 2, verifica los mejores candidatos con bigramas y palabras; paso 3, devuelve una sola línea con tipo, módulo, texto claro y confianza |
+| `[DT-10]` | `detectar` | **El ataque completo, en cuatro pasos:** paso 0, decide si el texto es atacable con el índice de coincidencia; paso 1, prueba César con cada k y Atbash, y se queda con las claves más verosímiles; paso 2, las verifica con bigramas, palabras y verosimilitud, corrigiendo por legibilidad; paso 3, devuelve una sola línea con tipo, módulo, texto claro y confianza. Por defecto ataca solo César y Atbash, lo que pide la rúbrica: la familia afín completa se puede pedir, pero con textos cortos y alfabetos grandes da falsos positivos |
+| `[DT-11]` | `PRESELECCION` | Cuántas claves, las más verosímiles, pasan a la verificación con bigramas y palabras (32). El filtro va primero porque esos dos jueces se dejan engañar por descifrados llenos de símbolos raros |
+| `[DT-12]` | `verosimilitud` | Qué tan español es, símbolo por símbolo, lo que produce una clave: promedio del logaritmo de la frecuencia esperada de cada símbolo descifrado. Un símbolo que el español no usa cuesta mucho, así que el texto basura no puede parecer bueno |
+| `[DT-13]` | `referenciaSinMayusculas` | Suma la frecuencia de mayúsculas y minúsculas de cada letra, para que un texto correcto escrito en MAYÚSCULAS no salga castigado. No junta las tildes: si "é" valiera lo mismo que "e", un descifrado basura lleno de acentos pasaría |
 
 ## Por qué esta forma de documentar
 

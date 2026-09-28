@@ -135,11 +135,20 @@ export function referenciaParaAlfabeto(alfabeto) {
   // alfabeto recibe la frecuencia real de las letras del español. Con el ASCII
   // imprimible, que ya trae ambas cajas, cada caracter cae en si mismo y esto
   // no cambia nada. Lo detecto un test con el alfabeto de 27 letras.
+  //
+  // Dos pasadas, y el orden importa: primero cada simbolo tal cual y despues las
+  // variantes sin tilde que no existan como simbolo propio. En una sola pasada,
+  // con un alfabeto revuelto donde la "ó" aparece antes que la "o", la variante
+  // "o" de la "ó" se registraba primero y TODA la frecuencia de la "o" del
+  // español caia en la "ó". Asi un descifrado basura lleno de acentos parecia
+  // mas español que el correcto; paso en el examen.
   const destino = new Map()
   for (const [indice, simbolo] of alfabeto.simbolos.entries()) {
-    for (const variante of [simbolo, sinTildes(simbolo)]) {
-      if (!destino.has(variante)) destino.set(variante, indice)
-    }
+    if (!destino.has(simbolo)) destino.set(simbolo, indice)
+  }
+  for (const [indice, simbolo] of alfabeto.simbolos.entries()) {
+    const plano = sinTildes(simbolo)
+    if (!destino.has(plano)) destino.set(plano, indice)
   }
 
   const proporciones = new Float64Array(alfabeto.n)

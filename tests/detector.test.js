@@ -8,6 +8,7 @@ import {
 import { cifrarCesar } from '../src/core/cesar.js'
 import { atbash } from '../src/core/atbash.js'
 import { aplicarAfin } from '../src/core/afin.js'
+import { legibilidad } from '../src/core/texto.js'
 import { detectar, clasificar, multiplicadoresValidos } from '../src/core/detector.js'
 import {
   IC_REFERENCIA,
@@ -80,6 +81,19 @@ describe('tablas de referencia', () => {
     expect(cobertura).toBeGreaterThan(0.5)
   })
 
+  it('en un alfabeto revuelto, la "ó" no se roba la frecuencia de la "o"', () => {
+    // Antes, si la "ó" aparecia antes que la "o", toda la frecuencia de la "o"
+    // del español caia en la "ó". Con los alfabetos listos no se notaba porque
+    // ahi las letras sin tilde van primero; con uno personalizado, si.
+    const revuelto = crearAlfabeto('óúéáoeua')
+    const { proporciones } = referenciaParaAlfabeto(revuelto)
+    for (const [conTilde, sinTilde] of [['ó', 'o'], ['é', 'e'], ['ú', 'u'], ['á', 'a']]) {
+      expect(proporciones[revuelto.indiceDe(sinTilde)]).toBeGreaterThan(
+        5 * proporciones[revuelto.indiceDe(conTilde)],
+      )
+    }
+  })
+
   it('avisa cuando el alfabeto no tiene nada que ver con el corpus', () => {
     const emojis = crearAlfabeto('👍👎🎯🔒🧩🗝️'.normalize('NFC'))
     expect(referenciaParaAlfabeto(emojis).cobertura).toBe(0)
@@ -110,6 +124,16 @@ describe('jueces del paso 2', () => {
   it('el histograma solo cuenta simbolos del alfabeto', () => {
     const { total } = histograma('AB ñé', ascii)
     expect(total).toBe(3)
+  })
+
+  it('la legibilidad cuenta los simbolos raros que los otros jueces borran', () => {
+    expect(legibilidad('Él llegó tarde, ¿verdad?')).toBe(1)
+    expect(legibilidad('ERES EL MEJOR')).toBe(1)
+    // "so" es una palabra, asi que el juez de palabras le da 100% a esto:
+    expect(coberturaDePalabras('☿ós┰⚞ ⊥s∛☿ só┰')).toBeGreaterThan(0.5)
+    // y la legibilidad lo delata.
+    expect(legibilidad('☿ós┰⚞ ⊥s∛☿ só┰')).toBeLessThan(0.6)
+    expect(legibilidad('')).toBe(0)
   })
 
   it('el IC de un texto sin repeticiones es cero', () => {
@@ -160,9 +184,11 @@ describe('deteccion automatica', () => {
     expect(resultado.ganador.desplazamiento).toBeNull()
   })
 
-  it('resuelve tambien un afin generico, que no es ninguno de los dos', () => {
+  it('resuelve tambien un afin generico si se le pide la familia completa', () => {
     const clave = { a: 7, b: 23 }
-    const resultado = detectar(aplicarAfin(FRASES[3], ascii, clave), ascii)
+    const resultado = detectar(aplicarAfin(FRASES[3], ascii, clave), ascii, {
+      soloCesarYAtbash: false,
+    })
 
     expect(resultado.ganador.familia).toBe('afin')
     expect(resultado.ganador.textoClaro).toBe(FRASES[3])
@@ -219,6 +245,119 @@ describe('deteccion automatica', () => {
 
     expect(resultado.atacable).toBe(false)
     expect(resultado.diagnostico).toMatch(/no hay tabla de referencia/)
+  })
+})
+
+describe('alfabetos personalizados grandes y revueltos, con textos cortos', () => {
+  /*
+   * El caso que fallo en el examen: un alfabeto de cientos de simbolos, con las
+   * letras revueltas entre flechas, figuras y simbolos matematicos, y un texto
+   * de 30 caracteres. El detector respondio un afin (a = 173) con texto basura,
+   * aunque la respuesta correcta (Cesar) estaba en su propia tabla de evidencia.
+   *
+   * Aqui no se usa ningun alfabeto real: se GENERAN alfabetos del mismo estilo
+   * con una semilla fija, asi la prueba da siempre lo mismo y cubre la familia
+   * de casos, no una cadena en particular.
+   */
+
+  /** Generador pseudoaleatorio con semilla (mulberry32): mismo numero, misma serie. */
+  function azar(semilla) {
+    let s = semilla >>> 0
+    return () => {
+      s = (s + 0x6d2b79f5) >>> 0
+      let t = s
+      t = Math.imul(t ^ (t >>> 15), t | 1)
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+  }
+
+  function barajar(lista, r) {
+    const copia = [...lista]
+    for (let i = copia.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(r() * (i + 1))
+      ;[copia[i], copia[j]] = [copia[j], copia[i]]
+    }
+    return copia
+  }
+
+  const LETRAS_Y_PUNTUACION = Array.from(
+    'ABCDEFGHIJKLMNÑOPQRSTUVWXYZabcdefghijklmnñopqrstuvwxyzáéíóúÁÉÍÓÚüÜ0123456789.,;:¿?¡!-',
+  )
+  // Flechas, operadores, alfanumericos encerrados, cajas, figuras y simbolos varios.
+  const RELLENO = [
+    [0x2190, 0x21ff],
+    [0x2200, 0x22ff],
+    [0x2460, 0x24ff],
+    [0x2500, 0x257f],
+    [0x25a0, 0x25ff],
+    [0x2600, 0x26ff],
+  ].flatMap(([inicio, fin]) =>
+    Array.from({ length: fin - inicio + 1 }, (_, i) => String.fromCodePoint(inicio + i)),
+  )
+
+  function alfabetoRevuelto(n, semilla, { conEspacio }) {
+    const r = azar(semilla)
+    const base = conEspacio ? [...LETRAS_Y_PUNTUACION, ' '] : LETRAS_Y_PUNTUACION
+    const relleno = barajar(RELLENO, r).slice(0, n - base.length)
+    return crearAlfabeto(barajar([...base, ...relleno], r).join(''))
+  }
+
+  const CORTAS = [
+    '¿Este es un examen de Seguridad?',
+    'La clave se calcula, no se adivina.',
+    'Mañana presento el proyecto final.',
+    'Él llegó tarde porque perdió el camión.',
+    'ERES EL MEJOR ESTUDIANTE DE LA CLASE',
+    'Guarda bien la llave de la casa.',
+  ]
+
+  const CASOS = [130, 300, 500].flatMap((n) =>
+    [false, true].map((conEspacio) => ({ n, conEspacio })),
+  )
+
+  it.each(CASOS)(
+    'N = $n, espacio en el alfabeto: $conEspacio, sin una sola respuesta equivocada',
+    ({ n, conEspacio }) => {
+      const alfabeto = alfabetoRevuelto(n, n * 7 + Number(conEspacio), { conEspacio })
+      const r = azar(n)
+      const fallos = []
+
+      for (const frase of CORTAS) {
+        const k = 1 + Math.floor(r() * (n - 1))
+        for (const [tipo, criptograma] of [
+          ['cesar', cifrarCesar(frase, alfabeto, k)],
+          ['atbash', atbash(frase, alfabeto)],
+        ]) {
+          const resultado = detectar(criptograma, alfabeto)
+          const bien =
+            resultado.atacable &&
+            resultado.ganador.familia === tipo &&
+            resultado.ganador.textoClaro === frase
+          if (!bien) fallos.push(`${tipo} k=${k} "${frase}" -> ${resultado.diagnostico}`)
+        }
+      }
+
+      expect(fallos).toEqual([])
+    },
+  )
+
+  it('nunca responde un afin: Atbash es solo a = -1 con b = N - 1', () => {
+    const alfabeto = alfabetoRevuelto(430, 1, { conEspacio: false })
+    for (const frase of CORTAS) {
+      const resultado = detectar(atbash(frase, alfabeto), alfabeto)
+      for (const candidato of resultado.candidatos) {
+        expect(candidato.familia).not.toBe('afin')
+      }
+    }
+  })
+
+  it('con alfabetos de 500 simbolos sigue siendo instantaneo', () => {
+    const alfabeto = alfabetoRevuelto(500, 3, { conEspacio: true })
+    const criptograma = cifrarCesar(FRASES.slice(0, 5).join(' '), alfabeto, 321)
+    const inicio = performance.now()
+    detectar(criptograma, alfabeto)
+    expect(performance.now() - inicio).toBeLessThan(500)
   })
 })
 
