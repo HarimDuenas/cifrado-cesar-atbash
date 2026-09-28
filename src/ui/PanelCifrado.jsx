@@ -1,41 +1,26 @@
-/**
- * @file Panel de cifrado: elegir metodo, elegir modulo y cifrar.
- *
- * Cubre dos puntos de la rubrica: cifrar con Cesar permitiendo seleccionar el
- * modulo, y cifrar con Atbash. La palabra "modulo" es ambigua, asi que la
- * interfaz muestra los dos sentidos al mismo tiempo: el desplazamiento k y el
- * modulo aritmetico N. Con Atbash dice explicitamente que no usa ninguno.
- *
- * La k no tiene limite: se puede escribir 300 o un numero de 40 digitos, y el
- * panel muestra a que k dentro de [0, N) equivale, que es la que de verdad se
- * aplica. El slider solo recorre ese rango.
- */
+ /**
+  * @file Panel de cifrado. Muestra k y N porque "modulo" tiene los dos sentidos.
+  */
 
-/**
- * Quita el signo + y los ceros a la izquierda, para comparar la k escrita con
- * la efectiva sin que "+017" cuente como distinta de "17".
- *
- * @param {string} entrada
- * @returns {string}
- */
+ // "+017" y "17" son la misma k.
 function kCanonica(entrada) {
   return entrada.trim().replace(/^\+/, '').replace(/^(-?)0+(?=\d)/, '$1')
 }
 
-/**
- * @param {object} props
- * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto
- * @param {string} props.texto Texto claro.
- * @param {(valor: string) => void} props.onTexto
- * @param {'cesar' | 'atbash'} props.metodo
- * @param {(valor: 'cesar' | 'atbash') => void} props.onMetodo
- * @param {string} props.entradaK La k tal como se escribio.
- * @param {(valor: string) => void} props.onEntradaK
- * @param {number | null} props.kEfectiva La k reducida a [0, N), o null si no es un entero.
- * @param {string} props.criptograma Resultado del cifrado.
- * @param {string | null} props.error
- * @param {() => void} props.onEnviarADescifrar
- */
+ /**
+  * @param {object} props
+  * @param {import('../core/alfabeto.js').Alfabeto | null} props.alfabeto
+  * @param {string} props.texto
+  * @param {(valor: string) => void} props.onTexto
+  * @param {'cesar' | 'atbash'} props.metodo
+  * @param {(valor: 'cesar' | 'atbash') => void} props.onMetodo
+  * @param {string} props.entradaK Tal como se escribio.
+  * @param {(valor: string) => void} props.onEntradaK
+  * @param {number | null} props.kEfectiva En [0, N), o null si no es entero.
+  * @param {string} props.criptograma
+  * @param {string | null} props.error
+  * @param {() => void} props.onEnviarADescifrar
+  */
 export function PanelCifrado({
   alfabeto,
   texto,
@@ -52,7 +37,7 @@ export function PanelCifrado({
   const n = alfabeto?.n ?? 0
   const maximo = Math.max(n - 1, 0)
   const escrita = kCanonica(entradaK)
-  // "", "-" y "+" son una k a medio escribir: se pide, no se regaña.
+  // "", "-" y "+": la k aun se esta escribiendo.
   const incompleta = /^[+-]?$/.test(entradaK.trim())
   const kInvalida = metodo === 'cesar' && alfabeto !== null && kEfectiva === null
 
@@ -111,8 +96,7 @@ export function PanelCifrado({
           </label>
           <label className="campo">
             <span className="campo__etiqueta">k exacta (sin límite)</span>
-            {/* Texto y no type="number": un number redondea arriba de 2^53 y
-                muestra 1e+21 en vez de los digitos que se escribieron. */}
+            {/* type="number" redondea arriba de 2^53. */}
             <input
               className="campo__control campo__control--mono"
               type="text"

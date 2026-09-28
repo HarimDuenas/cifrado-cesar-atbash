@@ -1,10 +1,6 @@
 /**
- * @file Ensamblado de la aplicacion.
- *
- * Toda la logica de cifrado vive en `src/core/`, que es JS puro y sin React.
- * Este archivo solo mantiene el estado de los campos y conecta los tres
- * paneles. Por eso el enlace al "codigo documentado" apunta a `core/`: se lee
- * de corrido, sin JSX en medio.
+ * @file Estado de la aplicacion y conexion de los tres paneles.
+ * La logica de cifrado vive en src/core/.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -28,10 +24,10 @@ const FRASE_DE_EJEMPLO =
 
 const TITULO = 'César y Atbash, y cómo se rompen solos'
 
-/** Alfabeto fijo para la animacion del titulo, independiente del que elija el usuario. */
+// Alfabeto fijo para la animacion del titulo.
 const ALFABETO_TITULO = crearAlfabeto(ASCII_IMPRIMIBLE)
 
-/** ¿El usuario pidio menos movimiento? Entonces no se anima nada. */
+// Respeta "reducir movimiento" del sistema.
 function prefiereQuietud() {
   return (
     typeof window !== 'undefined' &&
@@ -43,22 +39,12 @@ export default function App() {
   const [entradaAlfabeto, setEntradaAlfabeto] = useState(ASCII_IMPRIMIBLE)
   const [textoClaro, setTextoClaro] = useState(FRASE_DE_EJEMPLO)
   const [metodo, setMetodo] = useState('cesar')
-  // La k se guarda tal como se escribe, sin limite de tamaño. De ahi sale una
-  // sola k efectiva, con la que se cifra Y la que se muestra: antes la caja
-  // recortaba a N - 1 mientras el motor reducia modulo N, y la pantalla decia
-  // una k distinta a la que se habia usado.
+  // La k se guarda como texto, sin limite; con ella se cifra y se muestra.
   const [entradaK, setEntradaK] = useState('17')
   const [criptograma, setCriptograma] = useState('')
 
-  /*
-   * El titulo se descifra solo al cargar, usando el MISMO motor del programa:
-   * empieza cifrado con Cesar y el desplazamiento baja hasta cero. La pagina se
-   * presenta haciendo lo que el programa hace.
-   *
-   * Se escribe directo en el DOM en vez de pasar por el estado de React porque
-   * es una animacion de una sola vez y puramente decorativa: no vale la pena
-   * re-renderizar toda la aplicacion treinta veces por ella.
-   */
+  // El titulo se descifra solo al cargar, con el mismo motor. Va directo al
+  // DOM para no re-renderizar la aplicacion en cada paso.
   useEffect(() => {
     const encabezado = document.querySelector('.app__titulo')
     if (!encabezado) return undefined
@@ -83,12 +69,7 @@ export default function App() {
     return () => clearInterval(temporizador)
   }, [])
 
-  /*
-   * Iluminacion que nace donde el usuario toca: se guardan las coordenadas del
-   * puntero como variables CSS sobre el elemento, y la hoja de estilos dibuja
-   * ahi un halo dorado. Un solo escucha delegado en el documento, en vez de uno
-   * por boton.
-   */
+  // Halo donde toca el puntero: guarda la posicion en --x y --y.
   useEffect(() => {
     const alTocar = (evento) => {
       const objetivo = evento.target.closest?.('.boton, .chip, .panel, .resultado')
@@ -97,7 +78,7 @@ export default function App() {
       objetivo.style.setProperty('--x', `${evento.clientX - caja.left}px`)
       objetivo.style.setProperty('--y', `${evento.clientY - caja.top}px`)
       objetivo.classList.remove('encendido')
-      // Reiniciar la animacion: sin esto, dos clics seguidos no vuelven a encender.
+      // Reinicia la animacion para que dos clics seguidos la repitan.
       void objetivo.offsetWidth
       objetivo.classList.add('encendido')
     }
@@ -110,11 +91,7 @@ export default function App() {
     }
   }, [])
 
-  // Lo que escribe o pega el usuario se limpia en dos pasos antes de construir
-  // el alfabeto: primero la basura del pegado (saltos de linea, invisibles),
-  // despues los repetidos. Asi cualquier cadena sirve ("HOLA MUNDO" queda en 9
-  // simbolos) y el panel avisa que quito. Aun puede ser invalido mientras
-  // escribe (menos de dos simbolos), asi que se construye dentro de un try.
+  // Limpia el pegado, quita repetidos y construye; puede fallar mientras escribe.
   const { alfabeto, error, repetidos, limpieza } = useMemo(() => {
     const limpieza = limpiarAlfabeto(entradaAlfabeto)
     const { simbolos, repetidos } = quitarRepetidos(limpieza.simbolos)
@@ -130,7 +107,7 @@ export default function App() {
     [alfabeto],
   )
 
-  // null mientras la k no sea un entero (vacia, "-", "1.5"...).
+  // null si la k no es un entero.
   const kEfectiva = useMemo(() => {
     if (!alfabeto) return null
     try {
